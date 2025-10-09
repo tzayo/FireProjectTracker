@@ -31,14 +31,21 @@ app.post('/api/teams', async (req, res) => {
 
 // Hydrants
 app.get('/api/hydrants', async (_req, res) => {
-  const hydrants = await prisma.hydrant.findMany();
+  const hydrants = await prisma.hydrant.findMany({ include: { nearestCabinet: true } });
   res.json(hydrants);
 });
 
 app.post('/api/hydrants', async (req, res) => {
-  const { code, latitude, longitude, address, status, notes } = req.body;
-  const hydrant = await prisma.hydrant.create({ data: { code, latitude, longitude, address, status, notes } });
+  const { code, number, serial, connectorDiameter, latitude, longitude, address, locationDescription, status, openState, repairNeeds, nearestCabinetId, nearestCabinetDistanceMeters, showOnMap, notes } = req.body;
+  const hydrant = await prisma.hydrant.create({ data: { code, number, serial, connectorDiameter, latitude, longitude, address, locationDescription, status, openState, repairNeeds, nearestCabinetId, nearestCabinetDistanceMeters, showOnMap, notes } });
   res.status(201).json(hydrant);
+});
+
+app.put('/api/hydrants/:id', async (req, res) => {
+  const { id } = req.params;
+  const { code, number, serial, connectorDiameter, latitude, longitude, address, locationDescription, status, openState, repairNeeds, nearestCabinetId, nearestCabinetDistanceMeters, showOnMap, notes } = req.body;
+  const hydrant = await prisma.hydrant.update({ where: { id }, data: { code, number, serial, connectorDiameter, latitude, longitude, address, locationDescription, status, openState, repairNeeds, nearestCabinetId, nearestCabinetDistanceMeters, showOnMap, notes } });
+  res.json(hydrant);
 });
 
 // Equipment Cabinets
@@ -122,7 +129,7 @@ app.post('/api/maintenance', async (req, res) => {
 // GeoJSON for map
 app.get('/api/map/features', async (_req, res) => {
   const [hydrants, cabinets] = await Promise.all([
-    prisma.hydrant.findMany(),
+    prisma.hydrant.findMany({ where: { showOnMap: true } }),
     prisma.equipmentCabinet.findMany(),
   ]);
 

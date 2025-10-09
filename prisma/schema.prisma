@@ -27,10 +27,20 @@ model Team {
 model Hydrant {
   id          String   @id @default(cuid())
   code        String   @unique // physical tag or label
+  number      Int?     @unique // human-readable running number
+  serial      String?  // serial number if exists on device
+  connectorDiameter String? // e.g., "2", "3", "3/4"
   latitude    Float?
   longitude   Float?
   address     String?
+  locationDescription String? // free text location description
   status      HydrantStatus @default(OPERATIONAL)
+  openState   OpenState @default(UNKNOWN)
+  repairNeeds Json?
+  nearestCabinetId String?
+  nearestCabinet   EquipmentCabinet? @relation(name: "NearestCabinet", fields: [nearestCabinetId], references: [id])
+  nearestCabinetDistanceMeters Float?
+  showOnMap   Boolean @default(true)
   lastTestAt  DateTime?
   notes       String?
   createdAt   DateTime @default(now())
@@ -44,6 +54,12 @@ enum HydrantStatus {
   OPERATIONAL
   NEEDS_SERVICE
   OUT_OF_ORDER
+}
+
+enum OpenState {
+  YES
+  NO
+  UNKNOWN
 }
 
 model EquipmentCabinet {
@@ -61,6 +77,7 @@ model EquipmentCabinet {
   // relations
   maintenance Maintenance[]
   tasks       Task[]
+  nearestForHydrants Hydrant[] @relation(name: "NearestCabinet")
 }
 
 enum CabinetStatus {

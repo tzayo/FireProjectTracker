@@ -1,4 +1,4 @@
-import { PrismaClient, HydrantStatus } from '@prisma/client';
+import { PrismaClient, HydrantStatus, OpenState } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -8,6 +8,14 @@ function statusFromOpen(open: string | undefined): HydrantStatus {
   if (t === 'V') return 'OPERATIONAL';
   if (t === 'X') return 'OUT_OF_ORDER';
   return 'NEEDS_SERVICE';
+}
+
+function openStateFromOpen(open: string | undefined): OpenState {
+  if (!open) return 'UNKNOWN';
+  const t = open.trim();
+  if (t === 'V') return 'YES';
+  if (t === 'X') return 'NO';
+  return 'UNKNOWN';
 }
 
 function buildNotes(params: { area: string; equipmentPoint?: string; repair?: string; diameter?: string; open?: string }): string {
@@ -113,11 +121,12 @@ async function main() {
   for (const h of hydrants) {
     const code = `H${h.num}`;
     const status = statusFromOpen(h.open);
+    const openState = openStateFromOpen(h.open);
     const notes = buildNotes({ area: h.area, equipmentPoint: h.equipmentPoint, repair: h.repair, diameter: h.diameter, open: h.open });
     await prisma.hydrant.upsert({
       where: { code },
-      update: { address: h.location, status, notes },
-      create: { code, address: h.location, status, notes },
+      update: { number: h.num, address: h.location, locationDescription: h.location, connectorDiameter: h.diameter, status, openState, notes, showOnMap: true, repairNeeds: h.repair ? { list: h.repair.split(',').map(s=>s.trim()) } : undefined },
+      create: { code, number: h.num, address: h.location, locationDescription: h.location, connectorDiameter: h.diameter, status, openState, notes, showOnMap: true, repairNeeds: h.repair ? { list: h.repair.split(',').map(s=>s.trim()) } : undefined },
     });
   }
   console.log(`Seeded ${hydrants.length} hydrants.`);
