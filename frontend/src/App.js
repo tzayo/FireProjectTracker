@@ -6,6 +6,7 @@ import Hydrants from './components/Hydrants';
 import EquipmentCabinets from './components/EquipmentCabinets';
 import Tasks from './components/Tasks';
 import Maintenance from './components/Maintenance';
+import Volunteers from './components/Volunteers';
 import './App.css';
 
 function App() {
@@ -42,6 +43,14 @@ function App() {
             >
               <span className="nav-icon">👥</span>
               <span>צוותים</span>
+            </Link>
+            <Link
+              to="/volunteers"
+              className={`nav-item ${activeTab === 'volunteers' ? 'active' : ''}`}
+              onClick={() => setActiveTab('volunteers')}
+            >
+              <span className="nav-icon">🙋‍♂️</span>
+              <span>מתנדבים</span>
             </Link>
             <Link
               to="/hydrants"
@@ -85,6 +94,7 @@ function App() {
             <Route path="/teams" element={<Teams />} />
             <Route path="/hydrants" element={<Hydrants />} />
             <Route path="/equipment" element={<EquipmentCabinets />} />
+            <Route path="/volunteers" element={<Volunteers />} />
             <Route path="/tasks" element={<Tasks />} />
             <Route path="/maintenance" element={<Maintenance />} />
           </Routes>

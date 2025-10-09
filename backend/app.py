@@ -147,6 +147,26 @@ class MaintenanceRecord(db.Model):
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
 
+class Volunteer(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    phone = db.Column(db.String(20))
+    skills = db.Column(db.Text)  # Comma separated or free text
+    availability = db.Column(db.String(20), default='available')  # available, busy, unavailable
+    notes = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'phone': self.phone,
+            'skills': self.skills,
+            'availability': self.availability,
+            'notes': self.notes,
+            'created_at': self.created_at.isoformat() if self.created_at else None
+        }
+
 # API Routes
 
 # Teams
@@ -398,23 +418,46 @@ def maintenance_record_detail(id):
     if request.method == 'GET':
         return jsonify(record.to_dict())
     
+# Volunteers
+@app.route('/api/volunteers', methods=['GET', 'POST'])
+def volunteers():
+    if request.method == 'GET':
+        volunteers = Volunteer.query.order_by(Volunteer.name.asc()).all()
+        return jsonify([v.to_dict() for v in volunteers])
+
+    elif request.method == 'POST':
+        data = request.json
+        volunteer = Volunteer(
+            name=data['name'],
+            phone=data.get('phone', ''),
+            skills=data.get('skills', ''),
+            availability=data.get('availability', 'available'),
+            notes=data.get('notes', '')
+        )
+        db.session.add(volunteer)
+        db.session.commit()
+        return jsonify(volunteer.to_dict()), 201
+
+
+@app.route('/api/volunteers/<int:id>', methods=['GET', 'PUT', 'DELETE'])
+def volunteer_detail(id):
+    volunteer = Volunteer.query.get_or_404(id)
+
+    if request.method == 'GET':
+        return jsonify(volunteer.to_dict())
+
     elif request.method == 'PUT':
         data = request.json
-        record.item_type = data.get('item_type', record.item_type)
-        record.item_id = data.get('item_id', record.item_id)
-        record.item_name = data.get('item_name', record.item_name)
-        record.maintenance_type = data.get('maintenance_type', record.maintenance_type)
-        record.description = data.get('description', record.description)
-        record.performed_by = data.get('performed_by', record.performed_by)
-        record.cost = data.get('cost', record.cost)
-        record.notes = data.get('notes', record.notes)
-        if data.get('date'):
-            record.date = datetime.fromisoformat(data['date'])
+        volunteer.name = data.get('name', volunteer.name)
+        volunteer.phone = data.get('phone', volunteer.phone)
+        volunteer.skills = data.get('skills', volunteer.skills)
+        volunteer.availability = data.get('availability', volunteer.availability)
+        volunteer.notes = data.get('notes', volunteer.notes)
         db.session.commit()
-        return jsonify(record.to_dict())
-    
+        return jsonify(volunteer.to_dict())
+
     elif request.method == 'DELETE':
-        db.session.delete(record)
+        db.session.delete(volunteer)
         db.session.commit()
         return '', 204
 
@@ -450,7 +493,13 @@ def dashboard_stats():
             'this_month': MaintenanceRecord.query.filter(
                 MaintenanceRecord.date >= datetime.now().replace(day=1)
             ).count()
-        }
+        },
+        'volunteers': {
+            'total': Volunteer.query.count(),
+            'available': Volunteer.query.filter_by(availability='available').count(),
+            'busy': Volunteer.query.filter_by(availability='busy').count(),
+            'unavailable': Volunteer.query.filter_by(availability='unavailable').count()
+        },
     }
     return jsonify(stats)
 

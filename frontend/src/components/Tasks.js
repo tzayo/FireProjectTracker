@@ -125,7 +125,8 @@ function Tasks() {
       maintenance: 'תחזוקה',
       inspection: 'בדיקה',
       training: 'אימון',
-      quarterly: 'רבעונית'
+      quarterly: 'רבעונית',
+      improvement: 'שיפור'
     };
     return types[type] || type;
   };
@@ -309,6 +310,7 @@ function Tasks() {
                       <option value="maintenance">תחזוקה</option>
                       <option value="training">אימון</option>
                       <option value="quarterly">רבעונית</option>
+                      <option value="improvement">שיפור</option>
                     </select>
                   </div>
 
