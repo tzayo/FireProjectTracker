@@ -1,0 +1,152 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Core entities for firefighting tracking in Kibbutz Galon
+
+model Team {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  // relations
+  members     TeamMember[]
+  tasks       Task[]
+  incidents   Incident[]
+}
+
+model Hydrant {
+  id          String   @id @default(cuid())
+  code        String   @unique // physical tag or label
+  latitude    Float
+  longitude   Float
+  address     String?
+  status      HydrantStatus @default(OPERATIONAL)
+  lastTestAt  DateTime?
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  // relations
+  maintenance Maintenance[]
+  tasks       Task[]
+}
+
+enum HydrantStatus {
+  OPERATIONAL
+  NEEDS_SERVICE
+  OUT_OF_ORDER
+}
+
+model EquipmentCabinet {
+  id          String   @id @default(cuid())
+  code        String   @unique // cabinet identifier
+  latitude    Float
+  longitude   Float
+  address     String?
+  contents    Json     // arbitrary inventory structure
+  status      CabinetStatus @default(READY)
+  lastCheckAt DateTime?
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  // relations
+  maintenance Maintenance[]
+  tasks       Task[]
+}
+
+enum CabinetStatus {
+  READY
+  LOW_STOCK
+  DAMAGED
+}
+
+model Task {
+  id            String   @id @default(cuid())
+  title         String
+  description   String?
+  dueAt         DateTime?
+  frequency     TaskFrequency? // for recurring or quarterly tasks
+  status        TaskStatus @default(OPEN)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  // assignments
+  teamId        String?
+  team          Team?     @relation(fields: [teamId], references: [id])
+  // target can be hydrant or cabinet via optional FKs
+  hydrantId     String?
+  hydrant       Hydrant?  @relation(fields: [hydrantId], references: [id])
+  cabinetId     String?
+  cabinet       EquipmentCabinet? @relation(fields: [cabinetId], references: [id])
+}
+
+enum TaskStatus {
+  OPEN
+  IN_PROGRESS
+  DONE
+  CANCELLED
+}
+
+enum TaskFrequency {
+  ONE_TIME
+  QUARTERLY
+  YEARLY
+}
+
+model Incident {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  startedAt   DateTime @default(now())
+  resolvedAt  DateTime?
+  severity    IncidentSeverity @default(LOW)
+  // location of incident (optional)
+  latitude    Float?
+  longitude   Float?
+  // assignment
+  teamId      String?
+  team        Team?     @relation(fields: [teamId], references: [id])
+}
+
+model TeamMember {
+  id        String @id @default(cuid())
+  name      String
+  phone     String?
+  role      String?
+  teamId    String
+  team      Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+}
+
+enum IncidentSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+model Maintenance {
+  id           String   @id @default(cuid())
+  performedAt  DateTime @default(now())
+  type         MaintenanceType
+  notes        String?
+  // target union (hydrant or cabinet)
+  hydrantId    String?
+  hydrant      Hydrant? @relation(fields: [hydrantId], references: [id])
+  cabinetId    String?
+  cabinet      EquipmentCabinet? @relation(fields: [cabinetId], references: [id])
+}
+
+enum MaintenanceType {
+  TEST
+  REPAIR
+  INSPECTION
+  REFILL
+}
