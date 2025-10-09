@@ -116,6 +116,26 @@ function Dashboard() {
               </div>
             </div>
           </div>
+
+          {/* Volunteers Stats */}
+          <div className="stat-card">
+            <div className="stat-icon" style={{ backgroundColor: '#ffe4e6' }}>
+              🙋‍♂️
+            </div>
+            <div className="stat-content">
+              <div className="stat-value">{stats.volunteers?.total || 0}</div>
+              <div className="stat-label">מתנדבים</div>
+              <div className="stat-details">
+                <span className="badge badge-success">{stats.volunteers?.available || 0} זמינים</span>
+                {stats.volunteers?.busy > 0 && (
+                  <span className="badge badge-warning">{stats.volunteers.busy} עסוקים</span>
+                )}
+                {stats.volunteers?.unavailable > 0 && (
+                  <span className="badge badge-danger">{stats.volunteers.unavailable} לא זמינים</span>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Additional Stats */}
