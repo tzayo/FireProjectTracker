@@ -44,6 +44,20 @@ export const createMaintenanceRecord = (data) => api.post('/maintenance', data);
 export const updateMaintenanceRecord = (id, data) => api.put(`/maintenance/${id}`, data);
 export const deleteMaintenanceRecord = (id) => api.delete(`/maintenance/${id}`);
 
+// Volunteers API
+export const getVolunteers = (params) => api.get('/volunteers', { params });
+export const getVolunteer = (id) => api.get(`/volunteers/${id}`);
+export const createVolunteer = (data) => api.post('/volunteers', data);
+export const updateVolunteer = (id, data) => api.put(`/volunteers/${id}`, data);
+export const deleteVolunteer = (id) => api.delete(`/volunteers/${id}`);
+
+// Activities API
+export const getActivities = (params) => api.get('/activities', { params });
+export const getActivity = (id) => api.get(`/activities/${id}`);
+export const createActivity = (data) => api.post('/activities', data);
+export const updateActivity = (id, data) => api.put(`/activities/${id}`, data);
+export const deleteActivity = (id) => api.delete(`/activities/${id}`);
+
 // Dashboard API
 export const getDashboardStats = () => api.get('/dashboard/stats');
 

@@ -147,6 +147,66 @@ class MaintenanceRecord(db.Model):
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
 
+class Volunteer(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    phone = db.Column(db.String(20))
+    email = db.Column(db.String(100))
+    specialization = db.Column(db.String(100))  # כיבוי אש, עזרה ראשונה, נהג, טכנאי
+    status = db.Column(db.String(20), default='available')  # available, busy, unavailable
+    skills = db.Column(db.Text)  # JSON string of skills
+    availability_hours = db.Column(db.String(200))  # זמינות
+    last_activity = db.Column(db.DateTime)
+    notes = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'phone': self.phone,
+            'email': self.email,
+            'specialization': self.specialization,
+            'status': self.status,
+            'skills': self.skills,
+            'availability_hours': self.availability_hours,
+            'last_activity': self.last_activity.isoformat() if self.last_activity else None,
+            'notes': self.notes,
+            'created_at': self.created_at.isoformat() if self.created_at else None
+        }
+
+class Activity(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text)
+    activity_type = db.Column(db.String(50))  # training, drill, emergency, meeting, maintenance
+    participants = db.Column(db.Text)  # JSON string of participant names
+    location = db.Column(db.String(200))
+    date = db.Column(db.DateTime, default=datetime.utcnow)
+    duration = db.Column(db.Integer)  # duration in minutes
+    outcome = db.Column(db.Text)  # תוצאות הפעילות
+    improvements_needed = db.Column(db.Text)  # שיפורים נדרשים
+    status = db.Column(db.String(20), default='planned')  # planned, ongoing, completed, cancelled
+    created_by = db.Column(db.String(100))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'title': self.title,
+            'description': self.description,
+            'activity_type': self.activity_type,
+            'participants': self.participants,
+            'location': self.location,
+            'date': self.date.isoformat() if self.date else None,
+            'duration': self.duration,
+            'outcome': self.outcome,
+            'improvements_needed': self.improvements_needed,
+            'status': self.status,
+            'created_by': self.created_by,
+            'created_at': self.created_at.isoformat() if self.created_at else None
+        }
+
 # API Routes
 
 # Teams
@@ -418,6 +478,132 @@ def maintenance_record_detail(id):
         db.session.commit()
         return '', 204
 
+# Volunteers
+@app.route('/api/volunteers', methods=['GET', 'POST'])
+def volunteers():
+    if request.method == 'GET':
+        status = request.args.get('status')
+        specialization = request.args.get('specialization')
+        
+        query = Volunteer.query
+        if status:
+            query = query.filter_by(status=status)
+        if specialization:
+            query = query.filter_by(specialization=specialization)
+        
+        volunteers = query.all()
+        return jsonify([volunteer.to_dict() for volunteer in volunteers])
+    
+    elif request.method == 'POST':
+        data = request.json
+        volunteer = Volunteer(
+            name=data['name'],
+            phone=data.get('phone', ''),
+            email=data.get('email', ''),
+            specialization=data.get('specialization', ''),
+            status=data.get('status', 'available'),
+            skills=data.get('skills', ''),
+            availability_hours=data.get('availability_hours', ''),
+            notes=data.get('notes', '')
+        )
+        if data.get('last_activity'):
+            volunteer.last_activity = datetime.fromisoformat(data['last_activity'])
+        db.session.add(volunteer)
+        db.session.commit()
+        return jsonify(volunteer.to_dict()), 201
+
+@app.route('/api/volunteers/<int:id>', methods=['GET', 'PUT', 'DELETE'])
+def volunteer_detail(id):
+    volunteer = Volunteer.query.get_or_404(id)
+    
+    if request.method == 'GET':
+        return jsonify(volunteer.to_dict())
+    
+    elif request.method == 'PUT':
+        data = request.json
+        volunteer.name = data.get('name', volunteer.name)
+        volunteer.phone = data.get('phone', volunteer.phone)
+        volunteer.email = data.get('email', volunteer.email)
+        volunteer.specialization = data.get('specialization', volunteer.specialization)
+        volunteer.status = data.get('status', volunteer.status)
+        volunteer.skills = data.get('skills', volunteer.skills)
+        volunteer.availability_hours = data.get('availability_hours', volunteer.availability_hours)
+        volunteer.notes = data.get('notes', volunteer.notes)
+        if data.get('last_activity'):
+            volunteer.last_activity = datetime.fromisoformat(data['last_activity'])
+        db.session.commit()
+        return jsonify(volunteer.to_dict())
+    
+    elif request.method == 'DELETE':
+        db.session.delete(volunteer)
+        db.session.commit()
+        return '', 204
+
+# Activities
+@app.route('/api/activities', methods=['GET', 'POST'])
+def activities():
+    if request.method == 'GET':
+        activity_type = request.args.get('activity_type')
+        status = request.args.get('status')
+        
+        query = Activity.query
+        if activity_type:
+            query = query.filter_by(activity_type=activity_type)
+        if status:
+            query = query.filter_by(status=status)
+        
+        activities = query.order_by(Activity.date.desc()).all()
+        return jsonify([activity.to_dict() for activity in activities])
+    
+    elif request.method == 'POST':
+        data = request.json
+        activity = Activity(
+            title=data['title'],
+            description=data.get('description', ''),
+            activity_type=data.get('activity_type', ''),
+            participants=data.get('participants', ''),
+            location=data.get('location', ''),
+            duration=data.get('duration'),
+            outcome=data.get('outcome', ''),
+            improvements_needed=data.get('improvements_needed', ''),
+            status=data.get('status', 'planned'),
+            created_by=data.get('created_by', '')
+        )
+        if data.get('date'):
+            activity.date = datetime.fromisoformat(data['date'])
+        db.session.add(activity)
+        db.session.commit()
+        return jsonify(activity.to_dict()), 201
+
+@app.route('/api/activities/<int:id>', methods=['GET', 'PUT', 'DELETE'])
+def activity_detail(id):
+    activity = Activity.query.get_or_404(id)
+    
+    if request.method == 'GET':
+        return jsonify(activity.to_dict())
+    
+    elif request.method == 'PUT':
+        data = request.json
+        activity.title = data.get('title', activity.title)
+        activity.description = data.get('description', activity.description)
+        activity.activity_type = data.get('activity_type', activity.activity_type)
+        activity.participants = data.get('participants', activity.participants)
+        activity.location = data.get('location', activity.location)
+        activity.duration = data.get('duration', activity.duration)
+        activity.outcome = data.get('outcome', activity.outcome)
+        activity.improvements_needed = data.get('improvements_needed', activity.improvements_needed)
+        activity.status = data.get('status', activity.status)
+        activity.created_by = data.get('created_by', activity.created_by)
+        if data.get('date'):
+            activity.date = datetime.fromisoformat(data['date'])
+        db.session.commit()
+        return jsonify(activity.to_dict())
+    
+    elif request.method == 'DELETE':
+        db.session.delete(activity)
+        db.session.commit()
+        return '', 204
+
 # Dashboard Statistics
 @app.route('/api/dashboard/stats', methods=['GET'])
 def dashboard_stats():
@@ -449,6 +635,21 @@ def dashboard_stats():
             'total': MaintenanceRecord.query.count(),
             'this_month': MaintenanceRecord.query.filter(
                 MaintenanceRecord.date >= datetime.now().replace(day=1)
+            ).count()
+        },
+        'volunteers': {
+            'total': Volunteer.query.count(),
+            'available': Volunteer.query.filter_by(status='available').count(),
+            'busy': Volunteer.query.filter_by(status='busy').count(),
+            'unavailable': Volunteer.query.filter_by(status='unavailable').count()
+        },
+        'activities': {
+            'total': Activity.query.count(),
+            'planned': Activity.query.filter_by(status='planned').count(),
+            'ongoing': Activity.query.filter_by(status='ongoing').count(),
+            'completed': Activity.query.filter_by(status='completed').count(),
+            'this_month': Activity.query.filter(
+                Activity.date >= datetime.now().replace(day=1)
             ).count()
         }
     }

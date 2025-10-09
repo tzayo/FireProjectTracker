@@ -6,6 +6,8 @@ import Hydrants from './components/Hydrants';
 import EquipmentCabinets from './components/EquipmentCabinets';
 import Tasks from './components/Tasks';
 import Maintenance from './components/Maintenance';
+import Volunteers from './components/Volunteers';
+import Activities from './components/Activities';
 import './App.css';
 
 function App() {
@@ -75,6 +77,22 @@ function App() {
               <span className="nav-icon">🔧</span>
               <span>תחזוקה</span>
             </Link>
+            <Link
+              to="/volunteers"
+              className={`nav-item ${activeTab === 'volunteers' ? 'active' : ''}`}
+              onClick={() => setActiveTab('volunteers')}
+            >
+              <span className="nav-icon">👤</span>
+              <span>מתנדבים</span>
+            </Link>
+            <Link
+              to="/activities"
+              className={`nav-item ${activeTab === 'activities' ? 'active' : ''}`}
+              onClick={() => setActiveTab('activities')}
+            >
+              <span className="nav-icon">📋</span>
+              <span>פעילויות</span>
+            </Link>
           </div>
         </nav>
 
@@ -87,6 +105,8 @@ function App() {
             <Route path="/equipment" element={<EquipmentCabinets />} />
             <Route path="/tasks" element={<Tasks />} />
             <Route path="/maintenance" element={<Maintenance />} />
+            <Route path="/volunteers" element={<Volunteers />} />
+            <Route path="/activities" element={<Activities />} />
           </Routes>
         </main>
       </div>
