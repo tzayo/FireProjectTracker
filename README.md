@@ -1,6 +1,6 @@
 # מערכת מעקב כיבוי אש - קיבוץ גלאון
 
-מערכת ניהול ומעקב עבור תחום כיבוי האש בקיבוץ גלאון: צוותים זמינים, משימות, תחזוקה, מיפוי ברזים וארונות ציוד ותיעוד אירועים.
+מערכת ניהול ומעקב מקיפה עבור תחום כיבוי האש בקיבוץ גלאון: צוותים זמינים, מתנדבים, פעילויות ושיפורים, משימות, תחזוקה, מיפוי ברזים וארונות ציוד ותיעוד אירועים.
 
 ## הרצה מקומית
 
@@ -22,18 +22,23 @@
 
 ## API עיקרי
 
-- `GET /api/teams`, `POST /api/teams`
-- `GET /api/hydrants`, `POST /api/hydrants`
-- `GET /api/cabinets`, `POST /api/cabinets`
-- `GET /api/tasks`, `POST /api/tasks`
-- `GET /api/incidents`, `POST /api/incidents`
-- `GET /api/maintenance`, `POST /api/maintenance`
-- `POST /api/tasks/generate-quarterly` – יצירת משימות רבעוניות אוטומטיות
-- `GET /api/map/features` – GeoJSON למפה (ברזים+ארונות)
+- `GET /api/teams`, `POST /api/teams` - ניהול צוותים
+- `GET /api/volunteers`, `POST /api/volunteers` - ניהול מתנדבים זמינים
+- `GET /api/activities`, `POST /api/activities` - מעקב פעילויות ושיפורים
+- `GET /api/hydrants`, `POST /api/hydrants` - ניהול הידרנטים
+- `GET /api/equipment-cabinets`, `POST /api/equipment-cabinets` - ניהול ארונות ציוד
+- `GET /api/tasks`, `POST /api/tasks` - ניהול משימות ופרויקטי שיפור
+- `GET /api/maintenance`, `POST /api/maintenance` - מעקב תחזוקה
+- `GET /api/dashboard/stats` – סטטיסטיקות כלליות
 
-## מבנה נתונים (Prisma)
+## מבנה נתונים
 
-כולל מודלים: `Team`, `TeamMember`, `Hydrant`, `EquipmentCabinet`, `Task`, `Incident`, `Maintenance`.
+כולל מודלים: `Team`, `Volunteer`, `Activity`, `Hydrant`, `EquipmentCabinet`, `Task`, `MaintenanceRecord`.
+
+### תכונות חדשות:
+- **מתנדבים זמינים** - ניהול מתנדבים עם מעקב התמחויות, כישורים וזמינות
+- **פעילויות ושיפורים** - תיעוד אימונים, תרגילים, פגישות ופעולות חירום עם דגש על שיפור מתמיד
+- **משימות לשיפור** - מערכת משימות מתקדמת כולל פרויקטי שיפור והתפתחות
 
 ## הערות
 

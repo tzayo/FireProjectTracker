@@ -45,8 +45,8 @@ function Dashboard() {
           לוח בקרה - סקירה כללית
         </h2>
         
-        {/* Stats Grid */}
-        <div className="grid grid-cols-4" style={{ marginBottom: '2rem' }}>
+        {/* Stats Grid - Row 1 */}
+        <div className="grid grid-cols-4" style={{ marginBottom: '1rem' }}>
           {/* Teams Stats */}
           <div className="stat-card">
             <div className="stat-icon" style={{ backgroundColor: '#dbeafe' }}>
@@ -118,8 +118,43 @@ function Dashboard() {
           </div>
         </div>
 
+        {/* Stats Grid - Row 2 (New) */}
+        <div className="grid grid-cols-2" style={{ marginBottom: '2rem' }}>
+          {/* Volunteers Stats */}
+          <div className="stat-card">
+            <div className="stat-icon" style={{ backgroundColor: '#e0e7ff' }}>
+              👤
+            </div>
+            <div className="stat-content">
+              <div className="stat-value">{stats.volunteers.total}</div>
+              <div className="stat-label">מתנדבים</div>
+              <div className="stat-details">
+                <span className="badge badge-success">{stats.volunteers.available} זמינים</span>
+                <span className="badge badge-warning">{stats.volunteers.busy} עסוקים</span>
+                <span className="badge badge-danger">{stats.volunteers.unavailable} לא זמינים</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Activities Stats */}
+          <div className="stat-card">
+            <div className="stat-icon" style={{ backgroundColor: '#fce7f3' }}>
+              📋
+            </div>
+            <div className="stat-content">
+              <div className="stat-value">{stats.activities.total}</div>
+              <div className="stat-label">פעילויות</div>
+              <div className="stat-details">
+                <span className="badge badge-info">{stats.activities.planned} מתוכננות</span>
+                <span className="badge badge-warning">{stats.activities.ongoing} בביצוע</span>
+                <span className="badge badge-success">{stats.activities.completed} הושלמו</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Additional Stats */}
-        <div className="grid grid-cols-2">
+        <div className="grid grid-cols-3">
           <div className="info-card">
             <h3 className="info-card-title">📋 משימות לביצוע</h3>
             <div className="info-card-content">
@@ -152,6 +187,20 @@ function Dashboard() {
               <div className="info-item">
                 <span>החודש:</span>
                 <strong>{stats.maintenance.this_month}</strong>
+              </div>
+            </div>
+          </div>
+
+          <div className="info-card">
+            <h3 className="info-card-title">📊 פעילויות החודש</h3>
+            <div className="info-card-content">
+              <div className="info-item">
+                <span>החודש:</span>
+                <strong>{stats.activities.this_month}</strong>
+              </div>
+              <div className="info-item">
+                <span>סה"כ:</span>
+                <strong>{stats.activities.total}</strong>
               </div>
             </div>
           </div>
