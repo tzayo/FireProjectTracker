@@ -27,8 +27,8 @@ model Team {
 model Hydrant {
   id          String   @id @default(cuid())
   code        String   @unique // physical tag or label
-  latitude    Float
-  longitude   Float
+  latitude    Float?
+  longitude   Float?
   address     String?
   status      HydrantStatus @default(OPERATIONAL)
   lastTestAt  DateTime?
@@ -49,8 +49,8 @@ enum HydrantStatus {
 model EquipmentCabinet {
   id          String   @id @default(cuid())
   code        String   @unique // cabinet identifier
-  latitude    Float
-  longitude   Float
+  latitude    Float?
+  longitude   Float?
   address     String?
   contents    Json     // arbitrary inventory structure
   status      CabinetStatus @default(READY)

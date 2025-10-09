@@ -127,16 +127,20 @@ app.get('/api/map/features', async (_req, res) => {
   ]);
 
   const features = [
-    ...hydrants.map((h) => ({
-      type: 'Feature',
-      properties: { type: 'hydrant', id: h.id, code: h.code, status: h.status },
-      geometry: { type: 'Point', coordinates: [h.longitude, h.latitude] },
-    })),
-    ...cabinets.map((c) => ({
-      type: 'Feature',
-      properties: { type: 'cabinet', id: c.id, code: c.code, status: c.status },
-      geometry: { type: 'Point', coordinates: [c.longitude, c.latitude] },
-    })),
+    ...hydrants
+      .filter((h) => h.latitude !== null && h.longitude !== null)
+      .map((h) => ({
+        type: 'Feature',
+        properties: { type: 'hydrant', id: h.id, code: h.code, status: h.status },
+        geometry: { type: 'Point', coordinates: [h.longitude as number, h.latitude as number] },
+      })),
+    ...cabinets
+      .filter((c) => c.latitude !== null && c.longitude !== null)
+      .map((c) => ({
+        type: 'Feature',
+        properties: { type: 'cabinet', id: c.id, code: c.code, status: c.status },
+        geometry: { type: 'Point', coordinates: [c.longitude as number, c.latitude as number] },
+      })),
   ];
 
   res.json({ type: 'FeatureCollection', features });
