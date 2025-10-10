@@ -1,20 +1,55 @@
 import React, { useState, useEffect } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, CircleMarker } from 'react-leaflet';
 import { getDashboardStats } from '../api';
+import axios from 'axios';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
+// Custom icons for hydrants and cabinets
+const hydrantIcon = (status) => {
+  const color = status === 'operational' ? '#22c55e' : status === 'needs_maintenance' ? '#eab308' : '#ef4444';
+  return L.divIcon({
+    html: `<div style="background-color: ${color}; width: 30px; height: 30px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; font-size: 16px;">🚰</div>`,
+    className: '',
+    iconSize: [30, 30]
+  });
+};
+
+const cabinetIcon = (status) => {
+  const color = status === 'ready' ? '#22c55e' : status === 'needs_check' ? '#eab308' : '#ef4444';
+  return L.divIcon({
+    html: `<div style="background-color: ${color}; width: 30px; height: 30px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; font-size: 16px;">🧰</div>`,
+    className: '',
+    iconSize: [30, 30]
+  });
+};
 
 function Dashboard() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [hydrants, setHydrants] = useState([]);
+  const [cabinets, setCabinets] = useState([]);
+  const [alerts, setAlerts] = useState([]);
 
   useEffect(() => {
-    loadStats();
+    loadDashboardData();
   }, []);
 
-  const loadStats = async () => {
+  const loadDashboardData = async () => {
     try {
-      const response = await getDashboardStats();
-      setStats(response.data);
+      const [statsRes, hydrantsRes, cabinetsRes, alertsRes] = await Promise.all([
+        getDashboardStats(),
+        axios.get('http://localhost:5000/api/hydrants'),
+        axios.get('http://localhost:5000/api/equipment-cabinets'),
+        axios.get('http://localhost:5000/api/dashboard/alerts')
+      ]);
+      
+      setStats(statsRes.data);
+      setHydrants(hydrantsRes.data.filter(h => h.latitude && h.longitude));
+      setCabinets(cabinetsRes.data.filter(c => c.latitude && c.longitude));
+      setAlerts(alertsRes.data);
     } catch (error) {
-      console.error('Error loading stats:', error);
+      console.error('Error loading dashboard data:', error);
     } finally {
       setLoading(false);
     }
@@ -38,8 +73,35 @@ function Dashboard() {
     );
   }
 
+  const defaultCenter = [31.4117, 34.6667]; // קיבוץ גלאון (מיקום משוער)
+
   return (
     <div>
+      {/* Alerts Panel - if any */}
+      {alerts.length > 0 && (
+        <div className="card" style={{ marginBottom: '1rem', backgroundColor: '#fef2f2', borderColor: '#fca5a5' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+            <span style={{ fontSize: '1.5rem' }}>⚠️</span>
+            <h3 style={{ fontSize: '1.125rem', fontWeight: '600', color: '#991b1b', margin: 0 }}>
+              התראות ({alerts.length})
+            </h3>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            {alerts.slice(0, 5).map((alert, index) => (
+              <div key={index} className={`alert-item ${alert.severity}`} style={{
+                padding: '0.75rem',
+                borderRadius: '0.5rem',
+                backgroundColor: alert.severity === 'critical' ? '#fee2e2' : '#fef3c7',
+                borderRight: `4px solid ${alert.severity === 'critical' ? '#dc2626' : '#f59e0b'}`
+              }}>
+                <strong>{alert.type === 'hydrant_inspection' ? '🚰' : alert.type === 'equipment_expiry' ? '🧯' : '✓'}</strong>
+                {' '}{alert.message}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="card">
         <h2 className="card-title" style={{ marginBottom: '1.5rem' }}>
           לוח בקרה - סקירה כללית
@@ -202,6 +264,113 @@ function Dashboard() {
                 <span>סה"כ:</span>
                 <strong>{stats.activities.total}</strong>
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Interactive Map */}
+        <div style={{ marginTop: '2rem' }}>
+          <h3 className="info-card-title">🗺️ מפת סקירה - כל הנכסים</h3>
+          <div style={{ height: '500px', borderRadius: '0.75rem', overflow: 'hidden', border: '1px solid #e5e7eb' }}>
+            <MapContainer
+              center={defaultCenter}
+              zoom={14}
+              style={{ height: '100%', width: '100%' }}
+            >
+              <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
+              
+              {/* Hydrants */}
+              {hydrants.map((hydrant) => (
+                <Marker
+                  key={`hydrant-${hydrant.id}`}
+                  position={[hydrant.latitude, hydrant.longitude]}
+                  icon={hydrantIcon(hydrant.status)}
+                >
+                  <Popup>
+                    <div style={{ textAlign: 'right', direction: 'rtl', minWidth: '200px' }}>
+                      <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1rem', fontWeight: '600' }}>
+                        🚰 {hydrant.name}
+                      </h3>
+                      <p style={{ margin: '0.25rem 0', fontSize: '0.875rem' }}>
+                        <strong>מס' סידורי:</strong> {hydrant.serial_number}
+                      </p>
+                      <p style={{ margin: '0.25rem 0', fontSize: '0.875rem' }}>
+                        <strong>מיקום:</strong> {hydrant.location}
+                      </p>
+                      <p style={{ margin: '0.25rem 0', fontSize: '0.875rem' }}>
+                        <strong>סוג:</strong> {hydrant.hydrant_type === 'ground' ? 'קרקעי' : hydrant.hydrant_type === 'wall' ? 'קיר' : 'בור'}
+                      </p>
+                      <p style={{ margin: '0.25rem 0', fontSize: '0.875rem' }}>
+                        <strong>סטטוס:</strong>{' '}
+                        <span className={`badge badge-${hydrant.status === 'operational' ? 'success' : hydrant.status === 'needs_maintenance' ? 'warning' : 'danger'}`}>
+                          {hydrant.status === 'operational' ? 'תקין' : hydrant.status === 'needs_maintenance' ? 'דורש תחזוקה' : 'לא תקין'}
+                        </span>
+                      </p>
+                      {hydrant.water_pressure && (
+                        <p style={{ margin: '0.25rem 0', fontSize: '0.875rem' }}>
+                          <strong>לחץ מים:</strong> {hydrant.water_pressure} בר
+                        </p>
+                      )}
+                    </div>
+                  </Popup>
+                </Marker>
+              ))}
+              
+              {/* Equipment Cabinets */}
+              {cabinets.map((cabinet) => (
+                <Marker
+                  key={`cabinet-${cabinet.id}`}
+                  position={[cabinet.latitude, cabinet.longitude]}
+                  icon={cabinetIcon(cabinet.status)}
+                >
+                  <Popup>
+                    <div style={{ textAlign: 'right', direction: 'rtl', minWidth: '200px' }}>
+                      <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1rem', fontWeight: '600' }}>
+                        🧰 ארון #{cabinet.cabinet_number}
+                      </h3>
+                      <p style={{ margin: '0.25rem 0', fontSize: '0.875rem' }}>
+                        <strong>שם:</strong> {cabinet.name}
+                      </p>
+                      <p style={{ margin: '0.25rem 0', fontSize: '0.875rem' }}>
+                        <strong>מיקום:</strong> {cabinet.location}
+                      </p>
+                      <p style={{ margin: '0.25rem 0', fontSize: '0.875rem' }}>
+                        <strong>סטטוס:</strong>{' '}
+                        <span className={`badge badge-${cabinet.status === 'ready' ? 'success' : cabinet.status === 'needs_check' ? 'warning' : 'danger'}`}>
+                          {cabinet.status === 'ready' ? 'תקין' : cabinet.status === 'needs_check' ? 'דורש בדיקה' : 'לא שלם'}
+                        </span>
+                      </p>
+                    </div>
+                  </Popup>
+                </Marker>
+              ))}
+            </MapContainer>
+          </div>
+          
+          {/* Map Legend */}
+          <div style={{ marginTop: '1rem', display: 'flex', gap: '1.5rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <div style={{ width: '20px', height: '20px', borderRadius: '50%', backgroundColor: '#22c55e', border: '2px solid white' }}></div>
+              <span style={{ fontSize: '0.875rem' }}>🚰 הידרנט תקין</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <div style={{ width: '20px', height: '20px', borderRadius: '50%', backgroundColor: '#eab308', border: '2px solid white' }}></div>
+              <span style={{ fontSize: '0.875rem' }}>🚰 דורש תחזוקה</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <div style={{ width: '20px', height: '20px', borderRadius: '50%', backgroundColor: '#ef4444', border: '2px solid white' }}></div>
+              <span style={{ fontSize: '0.875rem' }}>🚰 לא תקין</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <div style={{ width: '20px', height: '20px', borderRadius: '50%', backgroundColor: '#22c55e', border: '2px solid white' }}></div>
+              <span style={{ fontSize: '0.875rem' }}>🧰 ארון מוכן</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <div style={{ width: '20px', height: '20px', borderRadius: '50%', backgroundColor: '#eab308', border: '2px solid white' }}></div>
+              <span style={{ fontSize: '0.875rem' }}>🧰 דורש בדיקה</span>
             </div>
           </div>
         </div>

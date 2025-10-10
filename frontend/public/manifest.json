@@ -1,0 +1,51 @@
+{
+  "short_name": "כיבוי אש",
+  "name": "מערכת ניהול כיבוי אש - קיבוץ",
+  "description": "מערכת מקיפה לניהול תשתיות כיבוי אש, הידרנטים, ארונות ציוד וצוותי חירום",
+  "icons": [
+    {
+      "src": "fire-icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "fire-icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#dc2626",
+  "background_color": "#ffffff",
+  "orientation": "portrait",
+  "dir": "rtl",
+  "lang": "he",
+  "categories": ["emergency", "utilities", "productivity"],
+  "scope": "/",
+  "shortcuts": [
+    {
+      "name": "לוח בקרה",
+      "short_name": "דשבורד",
+      "description": "צפייה בלוח הבקרה המרכזי",
+      "url": "/",
+      "icons": [{ "src": "fire-icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "הידרנטים",
+      "short_name": "הידרנטים",
+      "description": "ניהול הידרנטים",
+      "url": "/hydrants",
+      "icons": [{ "src": "fire-icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "משימות",
+      "short_name": "משימות",
+      "description": "ניהול משימות",
+      "url": "/tasks",
+      "icons": [{ "src": "fire-icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

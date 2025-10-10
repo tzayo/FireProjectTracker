@@ -19,12 +19,15 @@ function Hydrants() {
   const [viewMode, setViewMode] = useState('list'); // 'list' or 'map'
   const [editingHydrant, setEditingHydrant] = useState(null);
   const [formData, setFormData] = useState({
+    serial_number: '',
     name: '',
     location: '',
     latitude: '',
     longitude: '',
+    hydrant_type: 'ground',
+    diameter: '',
+    water_pressure: '',
     status: 'operational',
-    pressure: '',
     notes: ''
   });
 
@@ -68,12 +71,15 @@ function Hydrants() {
   const handleEdit = (hydrant) => {
     setEditingHydrant(hydrant);
     setFormData({
+      serial_number: hydrant.serial_number || '',
       name: hydrant.name,
       location: hydrant.location,
       latitude: hydrant.latitude || '',
       longitude: hydrant.longitude || '',
+      hydrant_type: hydrant.hydrant_type || 'ground',
+      diameter: hydrant.diameter || '',
+      water_pressure: hydrant.water_pressure || '',
       status: hydrant.status,
-      pressure: hydrant.pressure || '',
       notes: hydrant.notes || ''
     });
     setShowModal(true);
@@ -92,12 +98,15 @@ function Hydrants() {
 
   const resetForm = () => {
     setFormData({
+      serial_number: '',
       name: '',
       location: '',
       latitude: '',
       longitude: '',
+      hydrant_type: 'ground',
+      diameter: '',
+      water_pressure: '',
       status: 'operational',
-      pressure: '',
       notes: ''
     });
     setEditingHydrant(null);
@@ -105,9 +114,9 @@ function Hydrants() {
 
   const getStatusBadge = (status) => {
     const badges = {
-      operational: <span className="badge badge-success">תקין</span>,
-      needs_maintenance: <span className="badge badge-warning">דורש תחזוקה</span>,
-      out_of_service: <span className="badge badge-danger">לא פעיל</span>
+      operational: <span className="badge badge-success">✅ תקין</span>,
+      needs_maintenance: <span className="badge badge-warning">⚠️ דורש תחזוקה</span>,
+      broken: <span className="badge badge-danger">❌ לא תקין</span>
     };
     return badges[status] || <span className="badge badge-gray">{status}</span>;
   };
@@ -201,30 +210,29 @@ function Hydrants() {
             <table className="table">
               <thead>
                 <tr>
+                  <th>מס' סידורי</th>
                   <th>שם</th>
                   <th>מיקום</th>
+                  <th>סוג</th>
+                  <th>לחץ מים</th>
+                  <th>קוטר</th>
                   <th>סטטוס</th>
-                  <th>לחץ</th>
-                  <th>קואורדינטות</th>
-                  <th>הערות</th>
                   <th>פעולות</th>
                 </tr>
               </thead>
               <tbody>
                 {hydrants.map((hydrant) => (
                   <tr key={hydrant.id}>
-                    <td><strong>{hydrant.name}</strong></td>
+                    <td><strong>{hydrant.serial_number}</strong></td>
+                    <td>{hydrant.name}</td>
                     <td>{hydrant.location}</td>
-                    <td>{getStatusBadge(hydrant.status)}</td>
-                    <td>{hydrant.pressure || '-'}</td>
                     <td>
-                      {hydrant.latitude && hydrant.longitude ? (
-                        <span style={{ fontSize: '0.8rem' }}>
-                          {hydrant.latitude.toFixed(4)}, {hydrant.longitude.toFixed(4)}
-                        </span>
-                      ) : '-'}
+                      {hydrant.hydrant_type === 'ground' ? '⚪ קרקעי' : 
+                       hydrant.hydrant_type === 'wall' ? '🔲 קיר' : '🕳️ בור'}
                     </td>
-                    <td>{hydrant.notes ? hydrant.notes.substring(0, 50) + (hydrant.notes.length > 50 ? '...' : '') : '-'}</td>
+                    <td>{hydrant.water_pressure ? `${hydrant.water_pressure} בר` : '-'}</td>
+                    <td>{hydrant.diameter ? `${hydrant.diameter}"` : '-'}</td>
+                    <td>{getStatusBadge(hydrant.status)}</td>
                     <td>
                       <div style={{ display: 'flex', gap: '0.5rem' }}>
                         <button
@@ -264,24 +272,78 @@ function Hydrants() {
               <div className="modal-body">
                 <div className="grid grid-cols-2">
                   <div className="form-group">
+                    <label className="form-label">מספר סידורי * (לדוגמה: H-001)</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={formData.serial_number}
+                      onChange={(e) => setFormData({ ...formData, serial_number: e.target.value })}
+                      placeholder="H-001"
+                      required
+                      disabled={editingHydrant} // לא ניתן לשנות מספר סידורי בעריכה
+                    />
+                  </div>
+
+                  <div className="form-group">
                     <label className="form-label">שם *</label>
                     <input
                       type="text"
                       className="form-input"
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      placeholder="הידרנט ליד בית ילדים"
                       required
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">מיקום *</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={formData.location}
+                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                    placeholder="לדוגמה: ליד בית הילדים"
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-3">
+                  <div className="form-group">
+                    <label className="form-label">סוג הידרנט</label>
+                    <select
+                      className="form-select"
+                      value={formData.hydrant_type}
+                      onChange={(e) => setFormData({ ...formData, hydrant_type: e.target.value })}
+                    >
+                      <option value="ground">קרקעי</option>
+                      <option value="wall">קיר</option>
+                      <option value="pit">בור</option>
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">קוטר (אינץ')</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      className="form-input"
+                      value={formData.diameter}
+                      onChange={(e) => setFormData({ ...formData, diameter: e.target.value })}
+                      placeholder="לדוגמה: 4"
                     />
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label">מיקום *</label>
+                    <label className="form-label">לחץ מים (בר)</label>
                     <input
-                      type="text"
+                      type="number"
+                      step="0.1"
                       className="form-input"
-                      value={formData.location}
-                      onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                      required
+                      value={formData.water_pressure}
+                      onChange={(e) => setFormData({ ...formData, water_pressure: e.target.value })}
+                      placeholder="לדוגמה: 5.5"
                     />
                   </div>
                 </div>
@@ -312,30 +374,17 @@ function Hydrants() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2">
-                  <div className="form-group">
-                    <label className="form-label">סטטוס</label>
-                    <select
-                      className="form-select"
-                      value={formData.status}
-                      onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                    >
-                      <option value="operational">תקין</option>
-                      <option value="needs_maintenance">דורש תחזוקה</option>
-                      <option value="out_of_service">לא פעיל</option>
-                    </select>
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">לחץ</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      value={formData.pressure}
-                      onChange={(e) => setFormData({ ...formData, pressure: e.target.value })}
-                      placeholder="לדוגמה: 5 בר"
-                    />
-                  </div>
+                <div className="form-group">
+                  <label className="form-label">סטטוס</label>
+                  <select
+                    className="form-select"
+                    value={formData.status}
+                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                  >
+                    <option value="operational">✅ תקין</option>
+                    <option value="needs_maintenance">⚠️ דורש תחזוקה</option>
+                    <option value="broken">❌ לא תקין</option>
+                  </select>
                 </div>
 
                 <div className="form-group">
@@ -345,6 +394,7 @@ function Hydrants() {
                     value={formData.notes}
                     onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                     placeholder="הערות נוספות..."
+                    rows="3"
                   />
                 </div>
               </div>
