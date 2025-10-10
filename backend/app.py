@@ -1,8 +1,10 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
+import json
+import math
 
 app = Flask(__name__)
 CORS(app)
@@ -37,70 +39,103 @@ class Team(db.Model):
 
 class Hydrant(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    serial_number = db.Column(db.String(50), unique=True, nullable=False)  # מספר סידורי ייחודי
     name = db.Column(db.String(100), nullable=False)
     location = db.Column(db.String(200), nullable=False)
     latitude = db.Column(db.Float)
     longitude = db.Column(db.Float)
-    status = db.Column(db.String(20), default='operational')  # operational, needs_maintenance, out_of_service
-    pressure = db.Column(db.String(50))
-    last_inspection = db.Column(db.DateTime)
+    hydrant_type = db.Column(db.String(20), default='ground')  # ground (קרקעי), wall (קיר), pit (בור)
+    diameter = db.Column(db.Float)  # קוטר צינור באינץ'
+    water_pressure = db.Column(db.Float)  # לחץ מים בבר
+    status = db.Column(db.String(20), default='operational')  # operational (תקין), needs_maintenance (דורש תחזוקה), broken (לא תקין)
+    last_inspection_date = db.Column(db.DateTime)
+    images = db.Column(db.Text)  # JSON array of image URLs
+    nearby_cabinets = db.Column(db.Text)  # JSON array of nearby cabinet IDs with distances
     notes = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     def to_dict(self):
         return {
             'id': self.id,
+            'serial_number': self.serial_number,
             'name': self.name,
             'location': self.location,
             'latitude': self.latitude,
             'longitude': self.longitude,
+            'hydrant_type': self.hydrant_type,
+            'diameter': self.diameter,
+            'water_pressure': self.water_pressure,
             'status': self.status,
-            'pressure': self.pressure,
-            'last_inspection': self.last_inspection.isoformat() if self.last_inspection else None,
+            'last_inspection_date': self.last_inspection_date.isoformat() if self.last_inspection_date else None,
+            'images': self.images,
+            'nearby_cabinets': self.nearby_cabinets,
             'notes': self.notes,
-            'created_at': self.created_at.isoformat() if self.created_at else None
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }
 
 class EquipmentCabinet(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    cabinet_number = db.Column(db.String(50), unique=True, nullable=False)  # מספר ארון ייחודי
     name = db.Column(db.String(100), nullable=False)
     location = db.Column(db.String(200), nullable=False)
     latitude = db.Column(db.Float)
     longitude = db.Column(db.Float)
-    equipment_list = db.Column(db.Text)  # JSON string of equipment
-    status = db.Column(db.String(20), default='ready')  # ready, incomplete, needs_check
-    last_inspection = db.Column(db.DateTime)
+    cabinet_type = db.Column(db.String(20), default='standard')  # standard, extended, emergency
+    installation_date = db.Column(db.DateTime)
+    equipment_list = db.Column(db.Text)  # JSON string of detailed equipment items
+    status = db.Column(db.String(20), default='ready')  # ready (תקין), incomplete (לא שלם), needs_check (דורש בדיקה)
+    last_inspection_date = db.Column(db.DateTime)
+    image = db.Column(db.Text)  # Image URL
+    nearby_hydrants = db.Column(db.Text)  # JSON array of nearby hydrant IDs with distances
     notes = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     def to_dict(self):
         return {
             'id': self.id,
+            'cabinet_number': self.cabinet_number,
             'name': self.name,
             'location': self.location,
             'latitude': self.latitude,
             'longitude': self.longitude,
+            'cabinet_type': self.cabinet_type,
+            'installation_date': self.installation_date.isoformat() if self.installation_date else None,
             'equipment_list': self.equipment_list,
             'status': self.status,
-            'last_inspection': self.last_inspection.isoformat() if self.last_inspection else None,
+            'last_inspection_date': self.last_inspection_date.isoformat() if self.last_inspection_date else None,
+            'image': self.image,
+            'nearby_hydrants': self.nearby_hydrants,
             'notes': self.notes,
-            'created_at': self.created_at.isoformat() if self.created_at else None
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }
 
 class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text)
-    task_type = db.Column(db.String(50))  # maintenance, inspection, training, quarterly
-    priority = db.Column(db.String(20), default='medium')  # low, medium, high, urgent
-    status = db.Column(db.String(20), default='pending')  # pending, in_progress, completed, cancelled
-    assigned_to = db.Column(db.String(100))
+    task_type = db.Column(db.String(50))  # inspection (בדיקה), maintenance (תחזוקה), repair (תיקון), upgrade (שדרוג), training (הדרכה)
+    priority = db.Column(db.String(20), default='medium')  # low, medium, high, critical
+    status = db.Column(db.String(20), default='new')  # new, in_progress, waiting, completed, cancelled
+    assigned_to = db.Column(db.String(100))  # שם חבר צוות
+    created_by = db.Column(db.String(100))  # שם יוצר המשימה
     due_date = db.Column(db.DateTime)
-    completed_date = db.Column(db.DateTime)
+    completed_at = db.Column(db.DateTime)
+    # קישורים לישויות
+    hydrant_id = db.Column(db.Integer, db.ForeignKey('hydrant.id'), nullable=True)
+    cabinet_id = db.Column(db.Integer, db.ForeignKey('equipment_cabinet.id'), nullable=True)
+    # מיקום על המפה (אופציונלי, למשימות שלא קשורות להידרנט/ארון)
+    location_latitude = db.Column(db.Float, nullable=True)
+    location_longitude = db.Column(db.Float, nullable=True)
+    attachments = db.Column(db.Text)  # JSON array of attachment URLs/files
     quarter = db.Column(db.String(10))  # Q1, Q2, Q3, Q4
     year = db.Column(db.Integer)
     notes = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     def to_dict(self):
         return {
@@ -111,12 +146,19 @@ class Task(db.Model):
             'priority': self.priority,
             'status': self.status,
             'assigned_to': self.assigned_to,
+            'created_by': self.created_by,
             'due_date': self.due_date.isoformat() if self.due_date else None,
-            'completed_date': self.completed_date.isoformat() if self.completed_date else None,
+            'completed_at': self.completed_at.isoformat() if self.completed_at else None,
+            'hydrant_id': self.hydrant_id,
+            'cabinet_id': self.cabinet_id,
+            'location_latitude': self.location_latitude,
+            'location_longitude': self.location_longitude,
+            'attachments': self.attachments,
             'quarter': self.quarter,
             'year': self.year,
             'notes': self.notes,
-            'created_at': self.created_at.isoformat() if self.created_at else None
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }
 
 class MaintenanceRecord(db.Model):
@@ -175,6 +217,60 @@ class Volunteer(db.Model):
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
 
+class EquipmentItem(db.Model):
+    """פריטי ציוד בתוך ארונות - מעקב מפורט"""
+    id = db.Column(db.Integer, primary_key=True)
+    cabinet_id = db.Column(db.Integer, db.ForeignKey('equipment_cabinet.id'), nullable=False)
+    item_type = db.Column(db.String(50), nullable=False)  # hose (זרנוק), nozzle (מזנק), extinguisher (מטף), valve (ברז), ppe (ציוד הגנה)
+    item_name = db.Column(db.String(100), nullable=False)
+    quantity = db.Column(db.Integer, default=1)
+    length = db.Column(db.Float, nullable=True)  # אורך (לזרנוקים, במטרים)
+    expiry_date = db.Column(db.DateTime, nullable=True)  # תאריך פג תוקף (למטפים)
+    status = db.Column(db.String(20), default='good')  # good (תקין), needs_replacement (דורש החלפה), missing (חסר)
+    last_check_date = db.Column(db.DateTime)
+    notes = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'cabinet_id': self.cabinet_id,
+            'item_type': self.item_type,
+            'item_name': self.item_name,
+            'quantity': self.quantity,
+            'length': self.length,
+            'expiry_date': self.expiry_date.isoformat() if self.expiry_date else None,
+            'status': self.status,
+            'last_check_date': self.last_check_date.isoformat() if self.last_check_date else None,
+            'notes': self.notes,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+        }
+
+class User(db.Model):
+    """משתמשים - לאימות והרשאות"""
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(100), unique=True, nullable=False)
+    phone = db.Column(db.String(20))
+    role = db.Column(db.String(20), default='member')  # admin, commander (מפקד), member (חבר צוות), viewer (צופה)
+    team_id = db.Column(db.Integer, db.ForeignKey('team.id'), nullable=True)
+    availability_status = db.Column(db.String(20), default='available')  # available, on_vacation, unavailable
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'email': self.email,
+            'phone': self.phone,
+            'role': self.role,
+            'team_id': self.team_id,
+            'availability_status': self.availability_status,
+            'created_at': self.created_at.isoformat() if self.created_at else None
+        }
+
 class Activity(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
@@ -206,6 +302,103 @@ class Activity(db.Model):
             'created_by': self.created_by,
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
+
+# Helper Functions
+
+def calculate_distance(lat1, lon1, lat2, lon2):
+    """חישוב מרחק בין שתי נקודות GPS במטרים (נוסחת Haversine)"""
+    if not all([lat1, lon1, lat2, lon2]):
+        return None
+    
+    R = 6371000  # רדיוס כדור הארץ במטרים
+    
+    lat1_rad = math.radians(lat1)
+    lat2_rad = math.radians(lat2)
+    delta_lat = math.radians(lat2 - lat1)
+    delta_lon = math.radians(lon2 - lon1)
+    
+    a = math.sin(delta_lat/2) * math.sin(delta_lat/2) + \
+        math.cos(lat1_rad) * math.cos(lat2_rad) * \
+        math.sin(delta_lon/2) * math.sin(delta_lon/2)
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+    
+    distance = R * c
+    return distance
+
+def find_nearby_items(source_lat, source_lon, items, max_distance=100):
+    """מציאת פריטים קרובים במטרים"""
+    nearby = []
+    for item in items:
+        if item.latitude and item.longitude:
+            distance = calculate_distance(source_lat, source_lon, item.latitude, item.longitude)
+            if distance and distance <= max_distance:
+                nearby.append({
+                    'id': item.id,
+                    'name': item.name if hasattr(item, 'name') else item.cabinet_number,
+                    'distance': round(distance, 1),
+                    'latitude': item.latitude,
+                    'longitude': item.longitude
+                })
+    # מיון לפי מרחק
+    nearby.sort(key=lambda x: x['distance'])
+    return nearby
+
+def check_inspection_alerts():
+    """בדיקת התראות לפריטים שטעונים בדיקה"""
+    alerts = []
+    
+    # בדיקת הידרנטים שלא נבדקו 5.5 חודשים
+    six_months_ago = datetime.utcnow() - timedelta(days=165)  # ~5.5 חודשים
+    hydrants_need_check = Hydrant.query.filter(
+        (Hydrant.last_inspection_date == None) | (Hydrant.last_inspection_date < six_months_ago)
+    ).all()
+    
+    for hydrant in hydrants_need_check:
+        alerts.append({
+            'type': 'hydrant_inspection',
+            'severity': 'warning',
+            'item_id': hydrant.id,
+            'item_name': hydrant.name,
+            'message': f'הידרנט {hydrant.name} טעון בדיקה תקופתית'
+        })
+    
+    # בדיקת מטפים עם תאריך תפוגה מתקרב (30 ימים)
+    thirty_days_ahead = datetime.utcnow() + timedelta(days=30)
+    expiring_items = EquipmentItem.query.filter(
+        EquipmentItem.item_type == 'extinguisher',
+        EquipmentItem.expiry_date != None,
+        EquipmentItem.expiry_date <= thirty_days_ahead
+    ).all()
+    
+    for item in expiring_items:
+        cabinet = EquipmentCabinet.query.get(item.cabinet_id)
+        alerts.append({
+            'type': 'equipment_expiry',
+            'severity': 'critical' if item.expiry_date <= datetime.utcnow() else 'warning',
+            'item_id': item.id,
+            'cabinet_name': cabinet.name if cabinet else 'Unknown',
+            'item_name': item.item_name,
+            'expiry_date': item.expiry_date.isoformat(),
+            'message': f'מטף {item.item_name} בארון {cabinet.name if cabinet else "Unknown"} פג/פג תוקף'
+        })
+    
+    # בדיקת משימות שעברו דדליין
+    overdue_tasks = Task.query.filter(
+        Task.status.in_(['new', 'in_progress', 'waiting']),
+        Task.due_date != None,
+        Task.due_date < datetime.utcnow()
+    ).all()
+    
+    for task in overdue_tasks:
+        alerts.append({
+            'type': 'task_overdue',
+            'severity': 'critical' if task.priority in ['critical', 'high'] else 'warning',
+            'item_id': task.id,
+            'item_name': task.title,
+            'message': f'משימה "{task.title}" עברה את תאריך היעד'
+        })
+    
+    return alerts
 
 # API Routes
 
@@ -261,14 +454,25 @@ def hydrants():
     elif request.method == 'POST':
         data = request.json
         hydrant = Hydrant(
+            serial_number=data['serial_number'],
             name=data['name'],
             location=data['location'],
             latitude=data.get('latitude'),
             longitude=data.get('longitude'),
+            hydrant_type=data.get('hydrant_type', 'ground'),
+            diameter=data.get('diameter'),
+            water_pressure=data.get('water_pressure'),
             status=data.get('status', 'operational'),
-            pressure=data.get('pressure', ''),
+            images=json.dumps(data.get('images', [])),
             notes=data.get('notes', '')
         )
+        
+        # חישוב ארונות קרובים אם יש קואורדינטות
+        if hydrant.latitude and hydrant.longitude:
+            cabinets = EquipmentCabinet.query.all()
+            nearby = find_nearby_items(hydrant.latitude, hydrant.longitude, cabinets, max_distance=100)
+            hydrant.nearby_cabinets = json.dumps(nearby)
+        
         db.session.add(hydrant)
         db.session.commit()
         return jsonify(hydrant.to_dict()), 201
@@ -282,15 +486,30 @@ def hydrant_detail(id):
     
     elif request.method == 'PUT':
         data = request.json
+        if 'serial_number' in data:
+            hydrant.serial_number = data['serial_number']
         hydrant.name = data.get('name', hydrant.name)
         hydrant.location = data.get('location', hydrant.location)
         hydrant.latitude = data.get('latitude', hydrant.latitude)
         hydrant.longitude = data.get('longitude', hydrant.longitude)
+        hydrant.hydrant_type = data.get('hydrant_type', hydrant.hydrant_type)
+        hydrant.diameter = data.get('diameter', hydrant.diameter)
+        hydrant.water_pressure = data.get('water_pressure', hydrant.water_pressure)
         hydrant.status = data.get('status', hydrant.status)
-        hydrant.pressure = data.get('pressure', hydrant.pressure)
         hydrant.notes = data.get('notes', hydrant.notes)
-        if data.get('last_inspection'):
-            hydrant.last_inspection = datetime.fromisoformat(data['last_inspection'])
+        
+        if 'images' in data:
+            hydrant.images = json.dumps(data['images'])
+        
+        if data.get('last_inspection_date'):
+            hydrant.last_inspection_date = datetime.fromisoformat(data['last_inspection_date'])
+        
+        # עדכון ארונות קרובים אם השתנו הקואורדינטות
+        if hydrant.latitude and hydrant.longitude:
+            cabinets = EquipmentCabinet.query.all()
+            nearby = find_nearby_items(hydrant.latitude, hydrant.longitude, cabinets, max_distance=100)
+            hydrant.nearby_cabinets = json.dumps(nearby)
+        
         db.session.commit()
         return jsonify(hydrant.to_dict())
     
@@ -309,14 +528,26 @@ def equipment_cabinets():
     elif request.method == 'POST':
         data = request.json
         cabinet = EquipmentCabinet(
+            cabinet_number=data['cabinet_number'],
             name=data['name'],
             location=data['location'],
             latitude=data.get('latitude'),
             longitude=data.get('longitude'),
-            equipment_list=data.get('equipment_list', ''),
+            cabinet_type=data.get('cabinet_type', 'standard'),
+            equipment_list=data.get('equipment_list', '[]'),
             status=data.get('status', 'ready'),
             notes=data.get('notes', '')
         )
+        
+        if data.get('installation_date'):
+            cabinet.installation_date = datetime.fromisoformat(data['installation_date'])
+        
+        # חישוב הידרנטים קרובים אם יש קואורדינטות
+        if cabinet.latitude and cabinet.longitude:
+            hydrants = Hydrant.query.all()
+            nearby = find_nearby_items(cabinet.latitude, cabinet.longitude, hydrants, max_distance=100)
+            cabinet.nearby_hydrants = json.dumps(nearby)
+        
         db.session.add(cabinet)
         db.session.commit()
         return jsonify(cabinet.to_dict()), 201
@@ -330,15 +561,28 @@ def equipment_cabinet_detail(id):
     
     elif request.method == 'PUT':
         data = request.json
+        if 'cabinet_number' in data:
+            cabinet.cabinet_number = data['cabinet_number']
         cabinet.name = data.get('name', cabinet.name)
         cabinet.location = data.get('location', cabinet.location)
         cabinet.latitude = data.get('latitude', cabinet.latitude)
         cabinet.longitude = data.get('longitude', cabinet.longitude)
+        cabinet.cabinet_type = data.get('cabinet_type', cabinet.cabinet_type)
         cabinet.equipment_list = data.get('equipment_list', cabinet.equipment_list)
         cabinet.status = data.get('status', cabinet.status)
         cabinet.notes = data.get('notes', cabinet.notes)
-        if data.get('last_inspection'):
-            cabinet.last_inspection = datetime.fromisoformat(data['last_inspection'])
+        
+        if data.get('installation_date'):
+            cabinet.installation_date = datetime.fromisoformat(data['installation_date'])
+        if data.get('last_inspection_date'):
+            cabinet.last_inspection_date = datetime.fromisoformat(data['last_inspection_date'])
+        
+        # עדכון הידרנטים קרובים אם השתנו הקואורדינטות
+        if cabinet.latitude and cabinet.longitude:
+            hydrants = Hydrant.query.all()
+            nearby = find_nearby_items(cabinet.latitude, cabinet.longitude, hydrants, max_distance=100)
+            cabinet.nearby_hydrants = json.dumps(nearby)
+        
         db.session.commit()
         return jsonify(cabinet.to_dict())
     
@@ -604,9 +848,167 @@ def activity_detail(id):
         db.session.commit()
         return '', 204
 
+# Equipment Items (פריטי ציוד בארונות)
+@app.route('/api/cabinets/<int:cabinet_id>/items', methods=['GET', 'POST'])
+def cabinet_items(cabinet_id):
+    cabinet = EquipmentCabinet.query.get_or_404(cabinet_id)
+    
+    if request.method == 'GET':
+        items = EquipmentItem.query.filter_by(cabinet_id=cabinet_id).all()
+        return jsonify([item.to_dict() for item in items])
+    
+    elif request.method == 'POST':
+        data = request.json
+        item = EquipmentItem(
+            cabinet_id=cabinet_id,
+            item_type=data['item_type'],
+            item_name=data['item_name'],
+            quantity=data.get('quantity', 1),
+            length=data.get('length'),
+            status=data.get('status', 'good'),
+            notes=data.get('notes', '')
+        )
+        if data.get('expiry_date'):
+            item.expiry_date = datetime.fromisoformat(data['expiry_date'])
+        if data.get('last_check_date'):
+            item.last_check_date = datetime.fromisoformat(data['last_check_date'])
+        
+        db.session.add(item)
+        db.session.commit()
+        return jsonify(item.to_dict()), 201
+
+@app.route('/api/equipment-items/<int:id>', methods=['GET', 'PUT', 'DELETE'])
+def equipment_item_detail(id):
+    item = EquipmentItem.query.get_or_404(id)
+    
+    if request.method == 'GET':
+        return jsonify(item.to_dict())
+    
+    elif request.method == 'PUT':
+        data = request.json
+        item.item_type = data.get('item_type', item.item_type)
+        item.item_name = data.get('item_name', item.item_name)
+        item.quantity = data.get('quantity', item.quantity)
+        item.length = data.get('length', item.length)
+        item.status = data.get('status', item.status)
+        item.notes = data.get('notes', item.notes)
+        
+        if 'expiry_date' in data:
+            item.expiry_date = datetime.fromisoformat(data['expiry_date']) if data['expiry_date'] else None
+        if 'last_check_date' in data:
+            item.last_check_date = datetime.fromisoformat(data['last_check_date']) if data['last_check_date'] else None
+        
+        db.session.commit()
+        return jsonify(item.to_dict())
+    
+    elif request.method == 'DELETE':
+        db.session.delete(item)
+        db.session.commit()
+        return '', 204
+
+# Proximity APIs
+@app.route('/api/hydrants/<int:id>/nearby-cabinets', methods=['GET'])
+def hydrant_nearby_cabinets(id):
+    """מציאת ארונות קרובים להידרנט"""
+    hydrant = Hydrant.query.get_or_404(id)
+    
+    if not hydrant.latitude or not hydrant.longitude:
+        return jsonify({'error': 'Hydrant has no GPS coordinates'}), 400
+    
+    max_distance = request.args.get('max_distance', 100, type=int)
+    cabinets = EquipmentCabinet.query.all()
+    nearby = find_nearby_items(hydrant.latitude, hydrant.longitude, cabinets, max_distance)
+    
+    return jsonify(nearby)
+
+@app.route('/api/cabinets/<int:id>/nearby-hydrants', methods=['GET'])
+def cabinet_nearby_hydrants(id):
+    """מציאת הידרנטים קרובים לארון"""
+    cabinet = EquipmentCabinet.query.get_or_404(id)
+    
+    if not cabinet.latitude or not cabinet.longitude:
+        return jsonify({'error': 'Cabinet has no GPS coordinates'}), 400
+    
+    max_distance = request.args.get('max_distance', 100, type=int)
+    hydrants = Hydrant.query.all()
+    nearby = find_nearby_items(cabinet.latitude, cabinet.longitude, hydrants, max_distance)
+    
+    return jsonify(nearby)
+
+# Alerts and Notifications
+@app.route('/api/dashboard/alerts', methods=['GET'])
+def dashboard_alerts():
+    """קבלת כל ההתראות הפעילות במערכת"""
+    alerts = check_inspection_alerts()
+    return jsonify(alerts)
+
+# GeoJSON for Map Visualization
+@app.route('/api/hydrants/map', methods=['GET'])
+def hydrants_geojson():
+    """החזרת הידרנטים בפורמט GeoJSON למפות"""
+    hydrants = Hydrant.query.filter(Hydrant.latitude.isnot(None), Hydrant.longitude.isnot(None)).all()
+    
+    features = []
+    for hydrant in hydrants:
+        features.append({
+            'type': 'Feature',
+            'geometry': {
+                'type': 'Point',
+                'coordinates': [hydrant.longitude, hydrant.latitude]
+            },
+            'properties': {
+                'id': hydrant.id,
+                'name': hydrant.name,
+                'serial_number': hydrant.serial_number,
+                'status': hydrant.status,
+                'hydrant_type': hydrant.hydrant_type,
+                'water_pressure': hydrant.water_pressure,
+                'location': hydrant.location
+            }
+        })
+    
+    return jsonify({
+        'type': 'FeatureCollection',
+        'features': features
+    })
+
+@app.route('/api/cabinets/map', methods=['GET'])
+def cabinets_geojson():
+    """החזרת ארונות בפורמט GeoJSON למפות"""
+    cabinets = EquipmentCabinet.query.filter(
+        EquipmentCabinet.latitude.isnot(None), 
+        EquipmentCabinet.longitude.isnot(None)
+    ).all()
+    
+    features = []
+    for cabinet in cabinets:
+        features.append({
+            'type': 'Feature',
+            'geometry': {
+                'type': 'Point',
+                'coordinates': [cabinet.longitude, cabinet.latitude]
+            },
+            'properties': {
+                'id': cabinet.id,
+                'name': cabinet.name,
+                'cabinet_number': cabinet.cabinet_number,
+                'status': cabinet.status,
+                'cabinet_type': cabinet.cabinet_type,
+                'location': cabinet.location
+            }
+        })
+    
+    return jsonify({
+        'type': 'FeatureCollection',
+        'features': features
+    })
+
 # Dashboard Statistics
 @app.route('/api/dashboard/stats', methods=['GET'])
 def dashboard_stats():
+    # קבלת התראות
+    alerts = check_inspection_alerts()
+    
     stats = {
         'teams': {
             'total': Team.query.count(),
@@ -617,19 +1019,31 @@ def dashboard_stats():
             'total': Hydrant.query.count(),
             'operational': Hydrant.query.filter_by(status='operational').count(),
             'needs_maintenance': Hydrant.query.filter_by(status='needs_maintenance').count(),
-            'out_of_service': Hydrant.query.filter_by(status='out_of_service').count()
+            'broken': Hydrant.query.filter_by(status='broken').count()
         },
         'equipment_cabinets': {
             'total': EquipmentCabinet.query.count(),
             'ready': EquipmentCabinet.query.filter_by(status='ready').count(),
-            'needs_check': EquipmentCabinet.query.filter_by(status='needs_check').count()
+            'needs_check': EquipmentCabinet.query.filter_by(status='needs_check').count(),
+            'incomplete': EquipmentCabinet.query.filter_by(status='incomplete').count()
+        },
+        'equipment_items': {
+            'total': EquipmentItem.query.count(),
+            'good': EquipmentItem.query.filter_by(status='good').count(),
+            'needs_replacement': EquipmentItem.query.filter_by(status='needs_replacement').count(),
+            'missing': EquipmentItem.query.filter_by(status='missing').count()
         },
         'tasks': {
             'total': Task.query.count(),
-            'pending': Task.query.filter_by(status='pending').count(),
+            'new': Task.query.filter_by(status='new').count(),
             'in_progress': Task.query.filter_by(status='in_progress').count(),
             'completed': Task.query.filter_by(status='completed').count(),
-            'urgent': Task.query.filter_by(priority='urgent').count()
+            'critical': Task.query.filter_by(priority='critical').count(),
+            'overdue': Task.query.filter(
+                Task.status.in_(['new', 'in_progress', 'waiting']),
+                Task.due_date != None,
+                Task.due_date < datetime.utcnow()
+            ).count()
         },
         'maintenance': {
             'total': MaintenanceRecord.query.count(),
@@ -651,6 +1065,12 @@ def dashboard_stats():
             'this_month': Activity.query.filter(
                 Activity.date >= datetime.now().replace(day=1)
             ).count()
+        },
+        'alerts': {
+            'total': len(alerts),
+            'critical': len([a for a in alerts if a['severity'] == 'critical']),
+            'warning': len([a for a in alerts if a['severity'] == 'warning']),
+            'recent': alerts[:5]  # 5 התראות האחרונות
         }
     }
     return jsonify(stats)

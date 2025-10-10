@@ -2,14 +2,50 @@
 <html lang="he" dir="rtl">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes" />
     <meta name="theme-color" content="#dc2626" />
-    <meta name="description" content="מערכת ניהול כיבוי אש - קיבוץ גלאון" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <title>מערכת ניהול כיבוי אש - קיבוץ גלאון</title>
+    <meta name="description" content="מערכת ניהול כיבוי אש - קיבוץ גלאון: ניהול הידרנטים, ארונות ציוד, צוותי חירום ומשימות תחזוקה" />
+    
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="כיבוי אש" />
+    
+    <!-- Icons -->
+    <link rel="icon" type="image/png" sizes="192x192" href="%PUBLIC_URL%/fire-icon-192.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="%PUBLIC_URL%/fire-icon-192.png" />
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+          crossorigin="" />
+    
+    <title>מערכת ניהול כיבוי אש - קיבוץ</title>
   </head>
   <body>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <noscript>
+      <div style="text-align: center; padding: 2rem; font-family: Arial, sans-serif;">
+        <h2>JavaScript נדרש להפעלת המערכת</h2>
+        <p>נא להפעיל JavaScript בדפדפן כדי להשתמש במערכת ניהול כיבוי האש.</p>
+      </div>
+    </noscript>
     <div id="root"></div>
+    
+    <!-- Service Worker Registration -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('%PUBLIC_URL%/service-worker.js')
+            .then((registration) => {
+              console.log('Service Worker registered successfully:', registration.scope);
+            })
+            .catch((error) => {
+              console.log('Service Worker registration failed:', error);
+            });
+        });
+      }
+    </script>
   </body>
 </html>
