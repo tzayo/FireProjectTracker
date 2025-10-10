@@ -3,6 +3,7 @@ from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 import os
+import math
 
 app = Flask(__name__)
 CORS(app)
@@ -209,6 +210,20 @@ class Activity(db.Model):
 
 # API Routes
 
+# Utilities
+def haversine_distance_m(lat1, lon1, lat2, lon2):
+    """Calculate distance in meters between two lat/lon points using Haversine formula."""
+    if None in (lat1, lon1, lat2, lon2):
+        return None
+    R = 6371000.0  # meters
+    phi1 = math.radians(lat1)
+    phi2 = math.radians(lat2)
+    dphi = math.radians(lat2 - lat1)
+    dlambda = math.radians(lon2 - lon1)
+    a = math.sin(dphi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(dlambda / 2) ** 2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    return R * c
+
 # Teams
 @app.route('/api/teams', methods=['GET', 'POST'])
 def teams():
@@ -299,6 +314,80 @@ def hydrant_detail(id):
         db.session.commit()
         return '', 204
 
+# GeoJSON of hydrants for map visualization
+@app.route('/api/hydrants/map', methods=['GET'])
+def hydrants_map():
+    features = []
+    for h in Hydrant.query.all():
+        if h.latitude is None or h.longitude is None:
+            continue
+        features.append({
+            'type': 'Feature',
+            'properties': {
+                'id': h.id,
+                'name': h.name,
+                'status': h.status,
+                'pressure': h.pressure,
+            },
+            'geometry': {
+                'type': 'Point',
+                'coordinates': [h.longitude, h.latitude]
+            }
+        })
+    return jsonify({ 'type': 'FeatureCollection', 'features': features })
+
+# Nearby cabinets for a given hydrant within radius meters (default 100m)
+@app.route('/api/hydrants/<int:id>/nearby-cabinets', methods=['GET'])
+def hydrant_nearby_cabinets(id):
+    radius = float(request.args.get('radius', 100))
+    hydrant = Hydrant.query.get_or_404(id)
+    results = []
+    for c in EquipmentCabinet.query.all():
+        dist = haversine_distance_m(hydrant.latitude, hydrant.longitude, c.latitude, c.longitude)
+        if dist is not None and dist <= radius:
+            results.append({
+                'id': c.id,
+                'name': c.name,
+                'location': c.location,
+                'latitude': c.latitude,
+                'longitude': c.longitude,
+                'status': c.status,
+                'distance': round(dist, 2),
+            })
+    # sort by distance
+    results.sort(key=lambda x: x['distance'])
+    return jsonify(results)
+
+# Record an inspection for a hydrant and update fields
+@app.route('/api/hydrants/<int:id>/inspection', methods=['POST'])
+def hydrant_inspection(id):
+    hydrant = Hydrant.query.get_or_404(id)
+    data = request.json or {}
+    # Update hydrant fields if provided
+    if 'status' in data:
+        hydrant.status = data['status']
+    if 'pressure' in data:
+        hydrant.pressure = data['pressure']
+    if 'notes' in data:
+        hydrant.notes = data['notes']
+    when = datetime.fromisoformat(data['date']) if data.get('date') else datetime.utcnow()
+    hydrant.last_inspection = when
+
+    # Log maintenance record
+    record = MaintenanceRecord(
+        item_type='hydrant',
+        item_id=hydrant.id,
+        item_name=hydrant.name,
+        maintenance_type='inspection',
+        description=data.get('description', 'inspection'),
+        performed_by=data.get('performed_by', ''),
+        date=when,
+        notes=data.get('notes', '')
+    )
+    db.session.add(record)
+    db.session.commit()
+    return jsonify({ 'hydrant': hydrant.to_dict(), 'record': record.to_dict() }), 201
+
 # Equipment Cabinets
 @app.route('/api/equipment-cabinets', methods=['GET', 'POST'])
 def equipment_cabinets():
@@ -346,6 +435,27 @@ def equipment_cabinet_detail(id):
         db.session.delete(cabinet)
         db.session.commit()
         return '', 204
+
+# Nearby hydrants for a given cabinet within radius meters (default 100m)
+@app.route('/api/equipment-cabinets/<int:id>/nearby-hydrants', methods=['GET'])
+def cabinet_nearby_hydrants(id):
+    radius = float(request.args.get('radius', 100))
+    cabinet = EquipmentCabinet.query.get_or_404(id)
+    results = []
+    for h in Hydrant.query.all():
+        dist = haversine_distance_m(cabinet.latitude, cabinet.longitude, h.latitude, h.longitude)
+        if dist is not None and dist <= radius:
+            results.append({
+                'id': h.id,
+                'name': h.name,
+                'location': h.location,
+                'latitude': h.latitude,
+                'longitude': h.longitude,
+                'status': h.status,
+                'distance': round(dist, 2),
+            })
+    results.sort(key=lambda x: x['distance'])
+    return jsonify(results)
 
 # Tasks
 @app.route('/api/tasks', methods=['GET', 'POST'])
@@ -654,6 +764,48 @@ def dashboard_stats():
         }
     }
     return jsonify(stats)
+
+# Alerts endpoint (overdue inspections, overdue tasks, cabinets needing check)
+@app.route('/api/dashboard/alerts', methods=['GET'])
+def dashboard_alerts():
+    now = datetime.utcnow()
+    alerts = []
+
+    # Hydrants not inspected in last 6 months (approx 182 days)
+    six_months_ago = now.replace()
+    # simple timedelta in days (approx)
+    for h in Hydrant.query.all():
+        if h.last_inspection is None or (now - h.last_inspection).days >= 182:
+            alerts.append({
+                'type': 'inspection',
+                'entity': 'hydrant',
+                'entity_id': h.id,
+                'message': f"הידרנט '{h.name}' לא נבדק מעל 6 חודשים",
+                'severity': 'warning'
+            })
+
+    # Tasks overdue
+    for t in Task.query.all():
+        if t.due_date and t.status in ('pending', 'in_progress') and t.due_date < now:
+            alerts.append({
+                'type': 'task_overdue',
+                'entity': 'task',
+                'entity_id': t.id,
+                'message': f"המשימה '{t.title}' עברה את תאריך היעד",
+                'severity': 'danger'
+            })
+
+    # Cabinets need check
+    for c in EquipmentCabinet.query.filter_by(status='needs_check').all():
+        alerts.append({
+            'type': 'cabinet_check',
+            'entity': 'equipment_cabinet',
+            'entity_id': c.id,
+            'message': f"ארון '{c.name}' מסומן כ'דורש בדיקה'",
+            'severity': 'warning'
+        })
+
+    return jsonify({'alerts': alerts})
 
 # Initialize database
 @app.route('/api/init-db', methods=['POST'])

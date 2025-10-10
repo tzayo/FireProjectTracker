@@ -22,6 +22,9 @@ export const getHydrant = (id) => api.get(`/hydrants/${id}`);
 export const createHydrant = (data) => api.post('/hydrants', data);
 export const updateHydrant = (id, data) => api.put(`/hydrants/${id}`, data);
 export const deleteHydrant = (id) => api.delete(`/hydrants/${id}`);
+export const getHydrantsGeoJson = () => api.get('/hydrants/map');
+export const getNearbyCabinetsForHydrant = (id, params) => api.get(`/hydrants/${id}/nearby-cabinets`, { params });
+export const createHydrantInspection = (id, data) => api.post(`/hydrants/${id}/inspection`, data);
 
 // Equipment Cabinets API
 export const getEquipmentCabinets = () => api.get('/equipment-cabinets');
@@ -29,6 +32,7 @@ export const getEquipmentCabinet = (id) => api.get(`/equipment-cabinets/${id}`);
 export const createEquipmentCabinet = (data) => api.post('/equipment-cabinets', data);
 export const updateEquipmentCabinet = (id, data) => api.put(`/equipment-cabinets/${id}`, data);
 export const deleteEquipmentCabinet = (id) => api.delete(`/equipment-cabinets/${id}`);
+export const getNearbyHydrantsForCabinet = (id, params) => api.get(`/equipment-cabinets/${id}/nearby-hydrants`, { params });
 
 // Tasks API
 export const getTasks = (params) => api.get('/tasks', { params });
@@ -60,5 +64,6 @@ export const deleteActivity = (id) => api.delete(`/activities/${id}`);
 
 // Dashboard API
 export const getDashboardStats = () => api.get('/dashboard/stats');
+export const getDashboardAlerts = () => api.get('/dashboard/alerts');
 
 export default api;

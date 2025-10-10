@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import { getHydrants, createHydrant, updateHydrant, deleteHydrant } from '../api';
+import { MapContainer, TileLayer, Marker, Popup, Circle } from 'react-leaflet';
+import { getHydrants, createHydrant, updateHydrant, deleteHydrant, getNearbyCabinetsForHydrant } from '../api';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
@@ -18,6 +18,8 @@ function Hydrants() {
   const [showModal, setShowModal] = useState(false);
   const [viewMode, setViewMode] = useState('list'); // 'list' or 'map'
   const [editingHydrant, setEditingHydrant] = useState(null);
+  const [nearbyByHydrant, setNearbyByHydrant] = useState({}); // { [hydrantId]: [{id,name,distance,...}] }
+  const [nearbyLoading, setNearbyLoading] = useState({}); // { [hydrantId]: boolean }
   const [formData, setFormData] = useState({
     name: '',
     location: '',
@@ -31,6 +33,18 @@ function Hydrants() {
   useEffect(() => {
     loadHydrants();
   }, []);
+
+  useEffect(() => {
+    // Preload nearby cabinets for mapped hydrants
+    hydrants
+      .filter((h) => h.latitude && h.longitude)
+      .forEach((h) => {
+        if (!nearbyByHydrant[h.id] && !nearbyLoading[h.id]) {
+          loadNearbyCabinets(h.id);
+        }
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrants]);
 
   const loadHydrants = async () => {
     try {
@@ -62,6 +76,19 @@ function Hydrants() {
       loadHydrants();
     } catch (error) {
       console.error('Error saving hydrant:', error);
+    }
+  };
+
+  const loadNearbyCabinets = async (hydrantId) => {
+    try {
+      setNearbyLoading((s) => ({ ...s, [hydrantId]: true }));
+      const { data } = await getNearbyCabinetsForHydrant(hydrantId, { radius: 100 });
+      setNearbyByHydrant((s) => ({ ...s, [hydrantId]: data }));
+    } catch (error) {
+      console.error('Error loading nearby cabinets:', error);
+      setNearbyByHydrant((s) => ({ ...s, [hydrantId]: [] }));
+    } finally {
+      setNearbyLoading((s) => ({ ...s, [hydrantId]: false }));
     }
   };
 
@@ -164,30 +191,60 @@ function Hydrants() {
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
-              {hydrants.filter(h => h.latitude && h.longitude).map((hydrant) => (
-                <Marker
-                  key={hydrant.id}
-                  position={[hydrant.latitude, hydrant.longitude]}
-                >
-                  <Popup>
-                    <div style={{ textAlign: 'right', direction: 'rtl' }}>
-                      <h3 style={{ margin: '0 0 0.5rem 0' }}>{hydrant.name}</h3>
-                      <p style={{ margin: '0.25rem 0' }}><strong>מיקום:</strong> {hydrant.location}</p>
-                      <p style={{ margin: '0.25rem 0' }}><strong>סטטוס:</strong> {getStatusBadge(hydrant.status)}</p>
-                      {hydrant.pressure && (
-                        <p style={{ margin: '0.25rem 0' }}><strong>לחץ:</strong> {hydrant.pressure}</p>
-                      )}
-                      <button
-                        className="btn btn-primary"
-                        style={{ marginTop: '0.5rem', width: '100%' }}
-                        onClick={() => handleEdit(hydrant)}
-                      >
-                        ערוך
-                      </button>
-                    </div>
-                  </Popup>
-                </Marker>
-              ))}
+              {hydrants.filter(h => h.latitude && h.longitude).map((hydrant) => {
+                const statusColor =
+                  hydrant.status === 'operational' ? '#10b981' :
+                  hydrant.status === 'needs_maintenance' ? '#f59e0b' : '#ef4444';
+                return (
+                  <React.Fragment key={hydrant.id}>
+                    <Circle
+                      center={[hydrant.latitude, hydrant.longitude]}
+                      radius={50}
+                      pathOptions={{ color: statusColor, fillColor: statusColor, opacity: 0.8, fillOpacity: 0.1 }}
+                    />
+                    <Marker position={[hydrant.latitude, hydrant.longitude]}>
+                      <Popup>
+                        <div style={{ textAlign: 'right', direction: 'rtl', minWidth: '240px' }}>
+                          <h3 style={{ margin: '0 0 0.5rem 0' }}>{hydrant.name}</h3>
+                          <p style={{ margin: '0.25rem 0' }}><strong>מיקום:</strong> {hydrant.location}</p>
+                          <p style={{ margin: '0.25rem 0' }}><strong>סטטוס:</strong> {getStatusBadge(hydrant.status)}</p>
+                          {hydrant.pressure && (
+                            <p style={{ margin: '0.25rem 0' }}><strong>לחץ:</strong> {hydrant.pressure}</p>
+                          )}
+
+                          <div style={{ marginTop: '0.5rem' }}>
+                            <div style={{ fontWeight: 600, marginBottom: '0.25rem' }}>ארונות קרובים (≤100מ')</div>
+                            {nearbyLoading[hydrant.id] && <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>טוען...</div>}
+                            {!nearbyLoading[hydrant.id] && (nearbyByHydrant[hydrant.id]?.length ? (
+                              <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                                {nearbyByHydrant[hydrant.id].slice(0, 5).map((c) => (
+                                  <li key={c.id} style={{ display: 'flex', justifyContent: 'space-between', gap: '0.5rem', fontSize: '0.85rem' }}>
+                                    <span>{c.name}</span>
+                                    <span style={{ color: '#6b7280' }}>{c.distance} מ'</span>
+                                  </li>
+                                ))}
+                                {nearbyByHydrant[hydrant.id].length > 5 && (
+                                  <li style={{ fontSize: '0.85rem', color: '#6b7280' }}>ועוד {nearbyByHydrant[hydrant.id].length - 5}...</li>
+                                )}
+                              </ul>
+                            ) : (
+                              <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>אין ארונות קרובים</div>
+                            ))}
+                          </div>
+
+                          <button
+                            className="btn btn-primary"
+                            style={{ marginTop: '0.5rem', width: '100%' }}
+                            onClick={() => handleEdit(hydrant)}
+                          >
+                            ערוך
+                          </button>
+                        </div>
+                      </Popup>
+                    </Marker>
+                  </React.Fragment>
+                );
+              })}
             </MapContainer>
           </div>
         ) : hydrants.length === 0 ? (
