@@ -30,11 +30,12 @@ function Tasks() {
       const params = {};
       if (filterQuarter) params.quarter = filterQuarter;
       if (filterStatus) params.status = filterStatus;
-      
+
       const response = await getTasks(params);
-      setTasks(response.data);
+      setTasks(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('Error loading tasks:', error);
+      setTasks([]); // Ensure tasks is always an array
     } finally {
       setLoading(false);
     }

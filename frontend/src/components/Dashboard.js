@@ -43,13 +43,16 @@ function Dashboard() {
         axios.get('http://localhost:5000/api/equipment-cabinets'),
         axios.get('http://localhost:5000/api/dashboard/alerts')
       ]);
-      
+
       setStats(statsRes.data);
-      setHydrants(hydrantsRes.data.filter(h => h.latitude && h.longitude));
-      setCabinets(cabinetsRes.data.filter(c => c.latitude && c.longitude));
-      setAlerts(alertsRes.data);
+      setHydrants(Array.isArray(hydrantsRes.data) ? hydrantsRes.data.filter(h => h.latitude && h.longitude) : []);
+      setCabinets(Array.isArray(cabinetsRes.data) ? cabinetsRes.data.filter(c => c.latitude && c.longitude) : []);
+      setAlerts(Array.isArray(alertsRes.data) ? alertsRes.data : []);
     } catch (error) {
       console.error('Error loading dashboard data:', error);
+      setHydrants([]); // Ensure arrays are always arrays
+      setCabinets([]);
+      setAlerts([]);
     } finally {
       setLoading(false);
     }

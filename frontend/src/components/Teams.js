@@ -21,9 +21,10 @@ function Teams() {
   const loadTeams = async () => {
     try {
       const response = await getTeams();
-      setTeams(response.data);
+      setTeams(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('Error loading teams:', error);
+      setTeams([]); // Ensure teams is always an array
     } finally {
       setLoading(false);
     }

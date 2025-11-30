@@ -27,11 +27,12 @@ function Maintenance() {
     try {
       const params = {};
       if (filterType) params.item_type = filterType;
-      
+
       const response = await getMaintenanceRecords(params);
-      setRecords(response.data);
+      setRecords(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('Error loading records:', error);
+      setRecords([]); // Ensure records is always an array
     } finally {
       setLoading(false);
     }
