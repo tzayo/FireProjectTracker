@@ -32,9 +32,12 @@ function Activities() {
       if (filterType) params.activity_type = filterType;
       if (filterStatus) params.status = filterStatus;
       const response = await getActivities(params);
-      setActivities(response.data);
+      // Ensure activities is always an array
+      setActivities(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('Error loading activities:', error);
+      // Set to empty array on error to prevent map() errors
+      setActivities([]);
     } finally {
       setLoading(false);
     }
