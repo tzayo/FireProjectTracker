@@ -29,21 +29,50 @@
 
 ### התקנה
 
-#### Backend (Flask/Python)
+#### שיטה 1: התקנה אוטומטית (מומלץ)
+```bash
+./start-system.sh
+```
+הסקריפט יתקין את כל התלויות ויפעיל את המערכת אוטומטית.
+
+#### שיטה 2: התקנה ידנית
+
+**Backend (Flask/Python)**
 ```bash
 cd backend
-pip install Flask flask-cors flask-sqlalchemy
+python3 -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
+
+# Configure environment (optional for development)
+cp .env.example .env
+# Edit .env with your settings
+
 python app.py
 ```
 → השרת עולה על http://localhost:5000
 
-#### Frontend (React)
+**Frontend (React)**
 ```bash
 cd frontend
 npm install
+
+# Configure environment (optional)
+cp .env.example .env
+# Edit .env if you need custom API URL
+
 npm start
 ```
 → הממשק נפתח על http://localhost:3000
+
+### ⚙️ תצורה (Configuration)
+
+המערכת משתמשת בקבצי `.env` לתצורה:
+
+- **Backend:** `backend/.env` - הגדרות שרת, מסד נתונים, CORS
+- **Frontend:** `frontend/.env` - כתובת API, הגדרות מפה
+
+ראה [SECURITY.md](SECURITY.md) למידע מפורט על הגדרות אבטחה.
 
 ---
 
@@ -70,6 +99,8 @@ npm start
 - **SQLAlchemy** - ORM למסד נתונים
 - **SQLite** - מסד נתונים (ניתן לשדרג ל-PostgreSQL)
 - **Flask-CORS** - תמיכה ב-Cross-Origin Requests
+
+> **Note:** An incomplete TypeScript/Express backend implementation has been archived in `/archive` folder. The Flask backend is the official, production-ready implementation with all features.
 
 ### Database Models
 - **Hydrants** - הידרנטים עם GPS ומאפיינים טכניים
@@ -133,15 +164,38 @@ npm start
 
 ---
 
-## 🔐 אבטחה (לפיתוח עתידי)
+## 🔐 אבטחה
 
-המערכת הנוכחית מיועדת לשימוש ברשת פנימית. להפעלה בסביבת production מומלץ להוסיף:
+### Development (מצב נוכחי)
+- ✅ CORS מוגדר דרך משתני סביבה
+- ✅ Debug mode ניתן להשבתה
+- ✅ Secret key ניתן להגדרה
+- ⚠️ אין מערכת אימות (התשתית קיימת)
+- ⚠️ SQLite לא מתאים ל-production
 
-- אימות משתמשים (JWT/Session)
-- הרשאות לפי תפקיד
-- HTTPS
-- הצפנת נתונים רגישים
-- גיבויים אוטומטיים
+### Production (נדרש לפני הפצה)
+המערכת הנוכחית מיועדת לפיתוח. להפעלה ב-production יש לבצע:
+
+**קריטי:**
+- [ ] הגדרת SECRET_KEY אקראי וחזק
+- [ ] FLASK_DEBUG=False
+- [ ] שימוש ב-PostgreSQL במקום SQLite
+- [ ] הגדרת CORS_ORIGINS לדומיין ספציפי
+- [ ] הפעלת HTTPS
+
+**חשוב:**
+- [ ] מימוש מערכת אימות (JWT)
+- [ ] הוספת rate limiting
+- [ ] הוספת input validation
+- [ ] הגדרת גיבויים אוטומטיים
+
+**מומלץ:**
+- [ ] שימוש ב-Gunicorn/uWSGI
+- [ ] Reverse proxy (Nginx)
+- [ ] Monitoring ו-logging
+- [ ] Security headers
+
+📖 **קרא את [SECURITY.md](SECURITY.md) למדריך מלא**
 
 ---
 

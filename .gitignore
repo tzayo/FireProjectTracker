@@ -1,5 +1,30 @@
 node_modules
 # Keep environment variables out of version control
 .env
+.env.local
+.env.production
 
-/src/generated/prisma
+# Python virtual environment
+backend/venv/
+backend/__pycache__/
+*.pyc
+*.pyo
+
+# Databases (exclude from version control)
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+.backend.pid
+.frontend.pid
+
+# Archive databases
+archive/prisma/dev.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo

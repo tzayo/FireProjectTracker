@@ -2,16 +2,28 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timedelta
+from dotenv import load_dotenv
 import os
 import json
 import math
 
+# Load environment variables from .env file
+load_dotenv()
+
 app = Flask(__name__)
-CORS(app)
+
+# Flask Configuration
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
+app.config['ENV'] = os.getenv('FLASK_ENV', 'development')
+
+# CORS Configuration - parse comma-separated origins
+cors_origins = os.getenv('CORS_ORIGINS', 'http://localhost:3000').split(',')
+CORS(app, origins=cors_origins)
 
 # Database configuration
 basedir = os.path.abspath(os.path.dirname(__file__))
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'fire_department.db')
+default_db_uri = 'sqlite:///' + os.path.join(basedir, 'fire_department.db')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', default_db_uri)
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
@@ -1084,4 +1096,10 @@ def init_db():
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-    app.run(debug=True, host='0.0.0.0', port=5000)
+
+    # Get configuration from environment
+    debug_mode = os.getenv('FLASK_DEBUG', 'False').lower() in ('true', '1', 'yes')
+    host = os.getenv('FLASK_HOST', '0.0.0.0')
+    port = int(os.getenv('FLASK_PORT', 5000))
+
+    app.run(debug=debug_mode, host=host, port=port)
