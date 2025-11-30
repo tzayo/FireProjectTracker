@@ -649,10 +649,10 @@ def task_detail(id):
         task.notes = data.get('notes', task.notes)
         if data.get('due_date'):
             task.due_date = datetime.fromisoformat(data['due_date'])
-        if data.get('completed_date'):
-            task.completed_date = datetime.fromisoformat(data['completed_date'])
-        elif data.get('status') == 'completed' and not task.completed_date:
-            task.completed_date = datetime.utcnow()
+        if data.get('completed_at'):
+            task.completed_at = datetime.fromisoformat(data['completed_at'])
+        elif data.get('status') == 'completed' and not task.completed_at:
+            task.completed_at = datetime.utcnow()
         db.session.commit()
         return jsonify(task.to_dict())
     
