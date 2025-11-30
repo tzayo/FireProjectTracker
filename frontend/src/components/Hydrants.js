@@ -38,9 +38,10 @@ function Hydrants() {
   const loadHydrants = async () => {
     try {
       const response = await getHydrants();
-      setHydrants(response.data);
+      setHydrants(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('Error loading hydrants:', error);
+      setHydrants([]); // Ensure hydrants is always an array
     } finally {
       setLoading(false);
     }

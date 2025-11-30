@@ -55,9 +55,10 @@ function EquipmentCabinets() {
   const loadCabinets = async () => {
     try {
       const response = await axios.get(`${API_URL}/equipment-cabinets`);
-      setCabinets(response.data);
+      setCabinets(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('Error loading cabinets:', error);
+      setCabinets([]); // Ensure cabinets is always an array
     } finally {
       setLoading(false);
     }
@@ -66,9 +67,10 @@ function EquipmentCabinets() {
   const loadCabinetItems = async (cabinetId) => {
     try {
       const response = await axios.get(`${API_URL}/cabinets/${cabinetId}/items`);
-      setCabinetItems(response.data);
+      setCabinetItems(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('Error loading cabinet items:', error);
+      setCabinetItems([]); // Ensure cabinetItems is always an array
     }
   };
 

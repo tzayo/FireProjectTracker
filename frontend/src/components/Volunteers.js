@@ -26,9 +26,10 @@ function Volunteers() {
     try {
       const params = filterStatus ? { status: filterStatus } : {};
       const response = await getVolunteers(params);
-      setVolunteers(response.data);
+      setVolunteers(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('Error loading volunteers:', error);
+      setVolunteers([]); // Ensure volunteers is always an array
     } finally {
       setLoading(false);
     }
