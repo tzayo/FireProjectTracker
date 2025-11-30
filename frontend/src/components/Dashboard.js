@@ -25,7 +25,15 @@ const cabinetIcon = (status) => {
 };
 
 function Dashboard() {
-  const [stats, setStats] = useState(null);
+  const [stats, setStats] = useState({
+    teams: { total: 0, available: 0, on_duty: 0 },
+    hydrants: { total: 0, operational: 0, needs_maintenance: 0, out_of_service: 0 },
+    equipment_cabinets: { total: 0, ready: 0, needs_check: 0 },
+    tasks: { total: 0, pending: 0, in_progress: 0, completed: 0, urgent: 0 },
+    volunteers: { total: 0, available: 0, busy: 0, unavailable: 0 },
+    activities: { total: 0, planned: 0, ongoing: 0, completed: 0, this_month: 0 },
+    maintenance: { total: 0, this_month: 0 }
+  });
   const [loading, setLoading] = useState(true);
   const [hydrants, setHydrants] = useState([]);
   const [cabinets, setCabinets] = useState([]);
@@ -44,22 +52,23 @@ function Dashboard() {
         axios.get('http://localhost:5000/api/dashboard/alerts')
       ]);
 
-      setStats(statsRes.data);
+      // Safely set stats with fallback for each nested object
+      const safeStats = statsRes.data || {};
+      setStats({
+        teams: safeStats.teams || { total: 0, available: 0, on_duty: 0 },
+        hydrants: safeStats.hydrants || { total: 0, operational: 0, needs_maintenance: 0, out_of_service: 0 },
+        equipment_cabinets: safeStats.equipment_cabinets || { total: 0, ready: 0, needs_check: 0 },
+        tasks: safeStats.tasks || { total: 0, pending: 0, in_progress: 0, completed: 0, urgent: 0 },
+        volunteers: safeStats.volunteers || { total: 0, available: 0, busy: 0, unavailable: 0 },
+        activities: safeStats.activities || { total: 0, planned: 0, ongoing: 0, completed: 0, this_month: 0 },
+        maintenance: safeStats.maintenance || { total: 0, this_month: 0 }
+      });
       setHydrants(Array.isArray(hydrantsRes.data) ? hydrantsRes.data.filter(h => h.latitude && h.longitude) : []);
       setCabinets(Array.isArray(cabinetsRes.data) ? cabinetsRes.data.filter(c => c.latitude && c.longitude) : []);
       setAlerts(Array.isArray(alertsRes.data) ? alertsRes.data : []);
     } catch (error) {
       console.error('Error loading dashboard data:', error);
-      // Set default stats structure to prevent undefined errors
-      setStats({
-        teams: { total: 0, available: 0, on_duty: 0 },
-        hydrants: { total: 0, operational: 0, needs_maintenance: 0, out_of_service: 0 },
-        equipment_cabinets: { total: 0, ready: 0, needs_check: 0 },
-        tasks: { total: 0, pending: 0, in_progress: 0, completed: 0, urgent: 0 },
-        volunteers: { total: 0, available: 0, busy: 0, unavailable: 0 },
-        activities: { total: 0, planned: 0, ongoing: 0, completed: 0, this_month: 0 },
-        maintenance: { total: 0, this_month: 0 }
-      });
+      // Keep default stats structure on error (already initialized in state)
       setHydrants([]);
       setCabinets([]);
       setAlerts([]);
