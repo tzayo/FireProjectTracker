@@ -1031,7 +1031,8 @@ def dashboard_stats():
             'total': Hydrant.query.count(),
             'operational': Hydrant.query.filter_by(status='operational').count(),
             'needs_maintenance': Hydrant.query.filter_by(status='needs_maintenance').count(),
-            'broken': Hydrant.query.filter_by(status='broken').count()
+            'broken': Hydrant.query.filter_by(status='broken').count(),
+            'out_of_service': Hydrant.query.filter_by(status='broken').count()  # Alias for compatibility
         },
         'equipment_cabinets': {
             'total': EquipmentCabinet.query.count(),
@@ -1048,9 +1049,11 @@ def dashboard_stats():
         'tasks': {
             'total': Task.query.count(),
             'new': Task.query.filter_by(status='new').count(),
+            'pending': Task.query.filter_by(status='new').count(),  # Alias for compatibility
             'in_progress': Task.query.filter_by(status='in_progress').count(),
             'completed': Task.query.filter_by(status='completed').count(),
             'critical': Task.query.filter_by(priority='critical').count(),
+            'urgent': Task.query.filter_by(priority='critical').count(),  # Alias for compatibility
             'overdue': Task.query.filter(
                 Task.status.in_(['new', 'in_progress', 'waiting']),
                 Task.due_date != None,

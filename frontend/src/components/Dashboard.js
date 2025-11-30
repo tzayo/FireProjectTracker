@@ -55,9 +55,10 @@ function Dashboard() {
         teams: { total: 0, available: 0, on_duty: 0 },
         hydrants: { total: 0, operational: 0, needs_maintenance: 0, out_of_service: 0 },
         equipment_cabinets: { total: 0, ready: 0, needs_check: 0 },
-        tasks: { total: 0, pending: 0, in_progress: 0, completed: 0 },
-        volunteers: { total: 0, available: 0 },
-        activities: { total: 0 }
+        tasks: { total: 0, pending: 0, in_progress: 0, completed: 0, urgent: 0 },
+        volunteers: { total: 0, available: 0, busy: 0, unavailable: 0 },
+        activities: { total: 0, planned: 0, ongoing: 0, completed: 0, this_month: 0 },
+        maintenance: { total: 0, this_month: 0 }
       });
       setHydrants([]);
       setCabinets([]);
@@ -127,11 +128,11 @@ function Dashboard() {
               👥
             </div>
             <div className="stat-content">
-              <div className="stat-value">{stats.teams.total}</div>
+              <div className="stat-value">{stats.teams?.total ?? 0}</div>
               <div className="stat-label">סה"כ צוותים</div>
               <div className="stat-details">
-                <span className="badge badge-success">{stats.teams.available} זמינים</span>
-                <span className="badge badge-warning">{stats.teams.on_duty} בשירות</span>
+                <span className="badge badge-success">{stats.teams?.available ?? 0} זמינים</span>
+                <span className="badge badge-warning">{stats.teams?.on_duty ?? 0} בשירות</span>
               </div>
             </div>
           </div>
@@ -142,15 +143,15 @@ function Dashboard() {
               🚰
             </div>
             <div className="stat-content">
-              <div className="stat-value">{stats.hydrants.total}</div>
+              <div className="stat-value">{stats.hydrants?.total ?? 0}</div>
               <div className="stat-label">הידרנטים</div>
               <div className="stat-details">
-                <span className="badge badge-success">{stats.hydrants.operational} תקינים</span>
-                {stats.hydrants.needs_maintenance > 0 && (
-                  <span className="badge badge-warning">{stats.hydrants.needs_maintenance} דורשים תחזוקה</span>
+                <span className="badge badge-success">{stats.hydrants?.operational ?? 0} תקינים</span>
+                {(stats.hydrants?.needs_maintenance ?? 0) > 0 && (
+                  <span className="badge badge-warning">{stats.hydrants?.needs_maintenance ?? 0} דורשים תחזוקה</span>
                 )}
-                {stats.hydrants.out_of_service > 0 && (
-                  <span className="badge badge-danger">{stats.hydrants.out_of_service} לא פעילים</span>
+                {(stats.hydrants?.out_of_service ?? 0) > 0 && (
+                  <span className="badge badge-danger">{stats.hydrants?.out_of_service ?? 0} לא פעילים</span>
                 )}
               </div>
             </div>
@@ -162,12 +163,12 @@ function Dashboard() {
               🧰
             </div>
             <div className="stat-content">
-              <div className="stat-value">{stats.equipment_cabinets.total}</div>
+              <div className="stat-value">{stats.equipment_cabinets?.total ?? 0}</div>
               <div className="stat-label">ארונות ציוד</div>
               <div className="stat-details">
-                <span className="badge badge-success">{stats.equipment_cabinets.ready} מוכנים</span>
-                {stats.equipment_cabinets.needs_check > 0 && (
-                  <span className="badge badge-warning">{stats.equipment_cabinets.needs_check} לבדיקה</span>
+                <span className="badge badge-success">{stats.equipment_cabinets?.ready ?? 0} מוכנים</span>
+                {(stats.equipment_cabinets?.needs_check ?? 0) > 0 && (
+                  <span className="badge badge-warning">{stats.equipment_cabinets?.needs_check ?? 0} לבדיקה</span>
                 )}
               </div>
             </div>
@@ -179,13 +180,13 @@ function Dashboard() {
               ✓
             </div>
             <div className="stat-content">
-              <div className="stat-value">{stats.tasks.total}</div>
+              <div className="stat-value">{stats.tasks?.total ?? 0}</div>
               <div className="stat-label">משימות</div>
               <div className="stat-details">
-                <span className="badge badge-warning">{stats.tasks.pending} ממתינות</span>
-                <span className="badge badge-info">{stats.tasks.in_progress} בביצוע</span>
-                {stats.tasks.urgent > 0 && (
-                  <span className="badge badge-danger">{stats.tasks.urgent} דחופות</span>
+                <span className="badge badge-warning">{stats.tasks?.pending ?? 0} ממתינות</span>
+                <span className="badge badge-info">{stats.tasks?.in_progress ?? 0} בביצוע</span>
+                {(stats.tasks?.urgent ?? 0) > 0 && (
+                  <span className="badge badge-danger">{stats.tasks?.urgent ?? 0} דחופות</span>
                 )}
               </div>
             </div>
@@ -200,12 +201,12 @@ function Dashboard() {
               👤
             </div>
             <div className="stat-content">
-              <div className="stat-value">{stats.volunteers.total}</div>
+              <div className="stat-value">{stats.volunteers?.total ?? 0}</div>
               <div className="stat-label">מתנדבים</div>
               <div className="stat-details">
-                <span className="badge badge-success">{stats.volunteers.available} זמינים</span>
-                <span className="badge badge-warning">{stats.volunteers.busy} עסוקים</span>
-                <span className="badge badge-danger">{stats.volunteers.unavailable} לא זמינים</span>
+                <span className="badge badge-success">{stats.volunteers?.available ?? 0} זמינים</span>
+                <span className="badge badge-warning">{stats.volunteers?.busy ?? 0} עסוקים</span>
+                <span className="badge badge-danger">{stats.volunteers?.unavailable ?? 0} לא זמינים</span>
               </div>
             </div>
           </div>
@@ -216,12 +217,12 @@ function Dashboard() {
               📋
             </div>
             <div className="stat-content">
-              <div className="stat-value">{stats.activities.total}</div>
+              <div className="stat-value">{stats.activities?.total ?? 0}</div>
               <div className="stat-label">פעילויות</div>
               <div className="stat-details">
-                <span className="badge badge-info">{stats.activities.planned} מתוכננות</span>
-                <span className="badge badge-warning">{stats.activities.ongoing} בביצוע</span>
-                <span className="badge badge-success">{stats.activities.completed} הושלמו</span>
+                <span className="badge badge-info">{stats.activities?.planned ?? 0} מתוכננות</span>
+                <span className="badge badge-warning">{stats.activities?.ongoing ?? 0} בביצוע</span>
+                <span className="badge badge-success">{stats.activities?.completed ?? 0} הושלמו</span>
               </div>
             </div>
           </div>
@@ -234,19 +235,19 @@ function Dashboard() {
             <div className="info-card-content">
               <div className="info-item">
                 <span>ממתינות:</span>
-                <strong>{stats.tasks.pending}</strong>
+                <strong>{stats.tasks?.pending ?? 0}</strong>
               </div>
               <div className="info-item">
                 <span>בביצוע:</span>
-                <strong>{stats.tasks.in_progress}</strong>
+                <strong>{stats.tasks?.in_progress ?? 0}</strong>
               </div>
               <div className="info-item">
                 <span>הושלמו:</span>
-                <strong>{stats.tasks.completed}</strong>
+                <strong>{stats.tasks?.completed ?? 0}</strong>
               </div>
               <div className="info-item">
                 <span>דחופות:</span>
-                <strong className="text-danger">{stats.tasks.urgent}</strong>
+                <strong className="text-danger">{stats.tasks?.urgent ?? 0}</strong>
               </div>
             </div>
           </div>
@@ -256,11 +257,11 @@ function Dashboard() {
             <div className="info-card-content">
               <div className="info-item">
                 <span>סה"כ רשומות:</span>
-                <strong>{stats.maintenance.total}</strong>
+                <strong>{stats.maintenance?.total ?? 0}</strong>
               </div>
               <div className="info-item">
                 <span>החודש:</span>
-                <strong>{stats.maintenance.this_month}</strong>
+                <strong>{stats.maintenance?.this_month ?? 0}</strong>
               </div>
             </div>
           </div>
@@ -270,11 +271,11 @@ function Dashboard() {
             <div className="info-card-content">
               <div className="info-item">
                 <span>החודש:</span>
-                <strong>{stats.activities.this_month}</strong>
+                <strong>{stats.activities?.this_month ?? 0}</strong>
               </div>
               <div className="info-item">
                 <span>סה"כ:</span>
-                <strong>{stats.activities.total}</strong>
+                <strong>{stats.activities?.total ?? 0}</strong>
               </div>
             </div>
           </div>
