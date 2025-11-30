@@ -29,11 +29,19 @@ if [ ! -d "backend/venv" ]; then
     cd backend
     python3 -m venv venv
     source venv/bin/activate || . venv/Scripts/activate
-    pip install Flask flask-cors flask-sqlalchemy
+    pip install -r requirements.txt
     cd ..
     echo "✅ תלויות Backend הותקנו"
 else
     echo "✅ תלויות Backend כבר מותקנות"
+fi
+
+# בדיקת קובץ .env ב-Backend
+if [ ! -f "backend/.env" ]; then
+    echo "⚠️  אזהרה: קובץ backend/.env לא קיים"
+    echo "   המערכת תעבוד עם הגדרות ברירת מחדל (development mode)"
+    echo "   ליצירת קובץ תצורה: cp backend/.env.example backend/.env"
+    echo ""
 fi
 
 # בדיקת והתקנת תלויות Frontend
@@ -45,6 +53,13 @@ if [ ! -d "frontend/node_modules" ]; then
     echo "✅ תלויות Frontend הותקנו"
 else
     echo "✅ תלויות Frontend כבר מותקנות"
+fi
+
+# בדיקת קובץ .env ב-Frontend
+if [ ! -f "frontend/.env" ]; then
+    echo "ℹ️  מידע: קובץ frontend/.env לא קיים (אופציונלי)"
+    echo "   ליצירת קובץ תצורה: cp frontend/.env.example frontend/.env"
+    echo ""
 fi
 
 echo ""
