@@ -1,8 +1,11 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, session
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
+from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
+from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
+from functools import wraps
 import os
 import json
 import math
@@ -18,7 +21,7 @@ app.config['ENV'] = os.getenv('FLASK_ENV', 'development')
 
 # CORS Configuration - parse comma-separated origins
 cors_origins = os.getenv('CORS_ORIGINS', 'http://localhost:3000').split(',')
-CORS(app, origins=cors_origins)
+CORS(app, origins=cors_origins, supports_credentials=True)
 
 # Database configuration
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -27,6 +30,11 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', default_db_uri
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
+
+# Flask-Login Configuration
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.session_protection = 'strong'
 
 # Models
 class Team(db.Model):
@@ -260,28 +268,44 @@ class EquipmentItem(db.Model):
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }
 
-class User(db.Model):
+class User(UserMixin, db.Model):
     """משתמשים - לאימות והרשאות"""
     id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(50), unique=True, nullable=False)
+    password_hash = db.Column(db.String(255), nullable=False)
     name = db.Column(db.String(100), nullable=False)
-    email = db.Column(db.String(100), unique=True, nullable=False)
+    email = db.Column(db.String(100), unique=True, nullable=True)
     phone = db.Column(db.String(20))
-    role = db.Column(db.String(20), default='member')  # admin, commander (מפקד), member (חבר צוות), viewer (צופה)
+    role = db.Column(db.String(20), default='observer')  # manager, commander, member, observer
     team_id = db.Column(db.Integer, db.ForeignKey('team.id'), nullable=True)
     availability_status = db.Column(db.String(20), default='available')  # available, on_vacation, unavailable
+    is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    def to_dict(self):
-        return {
+    last_login = db.Column(db.DateTime, nullable=True)
+
+    def set_password(self, password):
+        """Hash and set the password"""
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        """Check if the password is correct"""
+        return check_password_hash(self.password_hash, password)
+
+    def to_dict(self, include_sensitive=False):
+        data = {
             'id': self.id,
+            'username': self.username,
             'name': self.name,
             'email': self.email,
             'phone': self.phone,
             'role': self.role,
             'team_id': self.team_id,
             'availability_status': self.availability_status,
-            'created_at': self.created_at.isoformat() if self.created_at else None
+            'is_active': self.is_active,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'last_login': self.last_login.isoformat() if self.last_login else None
         }
+        return data
 
 class Activity(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -314,6 +338,26 @@ class Activity(db.Model):
             'created_by': self.created_by,
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
+
+# Flask-Login user loader
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
+# Role-based permission decorator
+def role_required(*allowed_roles):
+    """Decorator to check if user has one of the allowed roles"""
+    def decorator(f):
+        @wraps(f)
+        @login_required
+        def decorated_function(*args, **kwargs):
+            if not current_user.is_authenticated:
+                return jsonify({'error': 'Authentication required'}), 401
+            if current_user.role not in allowed_roles:
+                return jsonify({'error': 'Insufficient permissions'}), 403
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
 
 # Helper Functions
 
@@ -414,14 +458,108 @@ def check_inspection_alerts():
 
 # API Routes
 
+# Authentication Routes
+@app.route('/api/auth/register', methods=['POST'])
+def register():
+    """Register a new user"""
+    data = request.json
+
+    # Validate required fields
+    if not data.get('username') or not data.get('password') or not data.get('name'):
+        return jsonify({'error': 'Username, password, and name are required'}), 400
+
+    # Check if username already exists
+    if User.query.filter_by(username=data['username']).first():
+        return jsonify({'error': 'Username already exists'}), 409
+
+    # Check if email already exists (if provided)
+    if data.get('email') and User.query.filter_by(email=data['email']).first():
+        return jsonify({'error': 'Email already exists'}), 409
+
+    # Create new user
+    user = User(
+        username=data['username'],
+        name=data['name'],
+        email=data.get('email'),
+        phone=data.get('phone'),
+        role=data.get('role', 'observer'),  # Default to observer
+        team_id=data.get('team_id')
+    )
+    user.set_password(data['password'])
+
+    db.session.add(user)
+    db.session.commit()
+
+    return jsonify({
+        'message': 'User registered successfully',
+        'user': user.to_dict()
+    }), 201
+
+@app.route('/api/auth/login', methods=['POST'])
+def login():
+    """Login user"""
+    data = request.json
+
+    if not data.get('username') or not data.get('password'):
+        return jsonify({'error': 'Username and password are required'}), 400
+
+    # Find user by username
+    user = User.query.filter_by(username=data['username']).first()
+
+    if not user or not user.check_password(data['password']):
+        return jsonify({'error': 'Invalid username or password'}), 401
+
+    if not user.is_active:
+        return jsonify({'error': 'Account is disabled'}), 403
+
+    # Login user
+    login_user(user, remember=data.get('remember', False))
+
+    # Update last login time
+    user.last_login = datetime.utcnow()
+    db.session.commit()
+
+    return jsonify({
+        'message': 'Login successful',
+        'user': user.to_dict()
+    }), 200
+
+@app.route('/api/auth/logout', methods=['POST'])
+@login_required
+def logout():
+    """Logout user"""
+    logout_user()
+    return jsonify({'message': 'Logout successful'}), 200
+
+@app.route('/api/auth/me', methods=['GET'])
+@login_required
+def get_current_user():
+    """Get current logged-in user"""
+    return jsonify(current_user.to_dict()), 200
+
+@app.route('/api/auth/check', methods=['GET'])
+def check_auth():
+    """Check if user is authenticated"""
+    if current_user.is_authenticated:
+        return jsonify({
+            'authenticated': True,
+            'user': current_user.to_dict()
+        }), 200
+    return jsonify({'authenticated': False}), 200
+
 # Teams
 @app.route('/api/teams', methods=['GET', 'POST'])
+@login_required
 def teams():
     if request.method == 'GET':
         teams = Team.query.all()
         return jsonify([team.to_dict() for team in teams])
-    
+
     elif request.method == 'POST':
+        # Only manager and commander can create teams
+        if current_user.role not in ['manager', 'commander']:
+            return jsonify({'error': 'Insufficient permissions'}), 403
+
         data = request.json
         team = Team(
             name=data['name'],
@@ -435,13 +573,18 @@ def teams():
         return jsonify(team.to_dict()), 201
 
 @app.route('/api/teams/<int:id>', methods=['GET', 'PUT', 'DELETE'])
+@login_required
 def team_detail(id):
     team = Team.query.get_or_404(id)
-    
+
     if request.method == 'GET':
         return jsonify(team.to_dict())
-    
+
     elif request.method == 'PUT':
+        # Only manager and commander can update teams
+        if current_user.role not in ['manager', 'commander']:
+            return jsonify({'error': 'Insufficient permissions'}), 403
+
         data = request.json
         team.name = data.get('name', team.name)
         team.leader = data.get('leader', team.leader)
@@ -450,20 +593,29 @@ def team_detail(id):
         team.phone = data.get('phone', team.phone)
         db.session.commit()
         return jsonify(team.to_dict())
-    
+
     elif request.method == 'DELETE':
+        # Only manager can delete teams
+        if current_user.role != 'manager':
+            return jsonify({'error': 'Insufficient permissions'}), 403
+
         db.session.delete(team)
         db.session.commit()
         return '', 204
 
 # Hydrants
 @app.route('/api/hydrants', methods=['GET', 'POST'])
+@login_required
 def hydrants():
     if request.method == 'GET':
         hydrants = Hydrant.query.all()
         return jsonify([hydrant.to_dict() for hydrant in hydrants])
-    
+
     elif request.method == 'POST':
+        # Members and above can create hydrants
+        if current_user.role not in ['manager', 'commander', 'member']:
+            return jsonify({'error': 'Insufficient permissions'}), 403
+
         data = request.json
         hydrant = Hydrant(
             serial_number=data['serial_number'],
@@ -490,13 +642,18 @@ def hydrants():
         return jsonify(hydrant.to_dict()), 201
 
 @app.route('/api/hydrants/<int:id>', methods=['GET', 'PUT', 'DELETE'])
+@login_required
 def hydrant_detail(id):
     hydrant = Hydrant.query.get_or_404(id)
-    
+
     if request.method == 'GET':
         return jsonify(hydrant.to_dict())
-    
+
     elif request.method == 'PUT':
+        # Members and above can update hydrants
+        if current_user.role not in ['manager', 'commander', 'member']:
+            return jsonify({'error': 'Insufficient permissions'}), 403
+
         data = request.json
         if 'serial_number' in data:
             hydrant.serial_number = data['serial_number']
@@ -524,20 +681,29 @@ def hydrant_detail(id):
         
         db.session.commit()
         return jsonify(hydrant.to_dict())
-    
+
     elif request.method == 'DELETE':
+        # Only manager and commander can delete hydrants
+        if current_user.role not in ['manager', 'commander']:
+            return jsonify({'error': 'Insufficient permissions'}), 403
+
         db.session.delete(hydrant)
         db.session.commit()
         return '', 204
 
 # Equipment Cabinets
 @app.route('/api/equipment-cabinets', methods=['GET', 'POST'])
+@login_required
 def equipment_cabinets():
     if request.method == 'GET':
         cabinets = EquipmentCabinet.query.all()
         return jsonify([cabinet.to_dict() for cabinet in cabinets])
-    
+
     elif request.method == 'POST':
+        # Members and above can create equipment cabinets
+        if current_user.role not in ['manager', 'commander', 'member']:
+            return jsonify({'error': 'Insufficient permissions'}), 403
+
         data = request.json
         cabinet = EquipmentCabinet(
             cabinet_number=data['cabinet_number'],
@@ -565,13 +731,18 @@ def equipment_cabinets():
         return jsonify(cabinet.to_dict()), 201
 
 @app.route('/api/equipment-cabinets/<int:id>', methods=['GET', 'PUT', 'DELETE'])
+@login_required
 def equipment_cabinet_detail(id):
     cabinet = EquipmentCabinet.query.get_or_404(id)
-    
+
     if request.method == 'GET':
         return jsonify(cabinet.to_dict())
-    
+
     elif request.method == 'PUT':
+        # Members and above can update equipment cabinets
+        if current_user.role not in ['manager', 'commander', 'member']:
+            return jsonify({'error': 'Insufficient permissions'}), 403
+
         data = request.json
         if 'cabinet_number' in data:
             cabinet.cabinet_number = data['cabinet_number']
@@ -597,14 +768,19 @@ def equipment_cabinet_detail(id):
         
         db.session.commit()
         return jsonify(cabinet.to_dict())
-    
+
     elif request.method == 'DELETE':
+        # Only manager and commander can delete equipment cabinets
+        if current_user.role not in ['manager', 'commander']:
+            return jsonify({'error': 'Insufficient permissions'}), 403
+
         db.session.delete(cabinet)
         db.session.commit()
         return '', 204
 
 # Tasks
 @app.route('/api/tasks', methods=['GET', 'POST'])
+@login_required
 def tasks():
     if request.method == 'GET':
         quarter = request.args.get('quarter')
@@ -642,6 +818,7 @@ def tasks():
         return jsonify(task.to_dict()), 201
 
 @app.route('/api/tasks/<int:id>', methods=['GET', 'PUT', 'DELETE'])
+@login_required
 def task_detail(id):
     task = Task.query.get_or_404(id)
     
@@ -675,6 +852,7 @@ def task_detail(id):
 
 # Maintenance Records
 @app.route('/api/maintenance', methods=['GET', 'POST'])
+@login_required
 def maintenance_records():
     if request.method == 'GET':
         item_type = request.args.get('item_type')
@@ -708,6 +886,7 @@ def maintenance_records():
         return jsonify(record.to_dict()), 201
 
 @app.route('/api/maintenance/<int:id>', methods=['GET', 'PUT', 'DELETE'])
+@login_required
 def maintenance_record_detail(id):
     record = MaintenanceRecord.query.get_or_404(id)
     
@@ -736,6 +915,7 @@ def maintenance_record_detail(id):
 
 # Volunteers
 @app.route('/api/volunteers', methods=['GET', 'POST'])
+@login_required
 def volunteers():
     if request.method == 'GET':
         status = request.args.get('status')
@@ -769,6 +949,7 @@ def volunteers():
         return jsonify(volunteer.to_dict()), 201
 
 @app.route('/api/volunteers/<int:id>', methods=['GET', 'PUT', 'DELETE'])
+@login_required
 def volunteer_detail(id):
     volunteer = Volunteer.query.get_or_404(id)
     
@@ -797,6 +978,7 @@ def volunteer_detail(id):
 
 # Activities
 @app.route('/api/activities', methods=['GET', 'POST'])
+@login_required
 def activities():
     if request.method == 'GET':
         activity_type = request.args.get('activity_type')
@@ -832,6 +1014,7 @@ def activities():
         return jsonify(activity.to_dict()), 201
 
 @app.route('/api/activities/<int:id>', methods=['GET', 'PUT', 'DELETE'])
+@login_required
 def activity_detail(id):
     activity = Activity.query.get_or_404(id)
     
@@ -862,6 +1045,7 @@ def activity_detail(id):
 
 # Equipment Items (פריטי ציוד בארונות)
 @app.route('/api/cabinets/<int:cabinet_id>/items', methods=['GET', 'POST'])
+@login_required
 def cabinet_items(cabinet_id):
     cabinet = EquipmentCabinet.query.get_or_404(cabinet_id)
     
@@ -890,6 +1074,7 @@ def cabinet_items(cabinet_id):
         return jsonify(item.to_dict()), 201
 
 @app.route('/api/equipment-items/<int:id>', methods=['GET', 'PUT', 'DELETE'])
+@login_required
 def equipment_item_detail(id):
     item = EquipmentItem.query.get_or_404(id)
     
@@ -920,6 +1105,7 @@ def equipment_item_detail(id):
 
 # Proximity APIs
 @app.route('/api/hydrants/<int:id>/nearby-cabinets', methods=['GET'])
+@login_required
 def hydrant_nearby_cabinets(id):
     """מציאת ארונות קרובים להידרנט"""
     hydrant = Hydrant.query.get_or_404(id)
@@ -934,6 +1120,7 @@ def hydrant_nearby_cabinets(id):
     return jsonify(nearby)
 
 @app.route('/api/cabinets/<int:id>/nearby-hydrants', methods=['GET'])
+@login_required
 def cabinet_nearby_hydrants(id):
     """מציאת הידרנטים קרובים לארון"""
     cabinet = EquipmentCabinet.query.get_or_404(id)
@@ -949,6 +1136,7 @@ def cabinet_nearby_hydrants(id):
 
 # Alerts and Notifications
 @app.route('/api/dashboard/alerts', methods=['GET'])
+@login_required
 def dashboard_alerts():
     """קבלת כל ההתראות הפעילות במערכת"""
     alerts = check_inspection_alerts()
@@ -956,6 +1144,7 @@ def dashboard_alerts():
 
 # GeoJSON for Map Visualization
 @app.route('/api/hydrants/map', methods=['GET'])
+@login_required
 def hydrants_geojson():
     """החזרת הידרנטים בפורמט GeoJSON למפות"""
     hydrants = Hydrant.query.filter(Hydrant.latitude.isnot(None), Hydrant.longitude.isnot(None)).all()
@@ -985,6 +1174,7 @@ def hydrants_geojson():
     })
 
 @app.route('/api/cabinets/map', methods=['GET'])
+@login_required
 def cabinets_geojson():
     """החזרת ארונות בפורמט GeoJSON למפות"""
     cabinets = EquipmentCabinet.query.filter(
@@ -1017,6 +1207,7 @@ def cabinets_geojson():
 
 # Dashboard Statistics
 @app.route('/api/dashboard/stats', methods=['GET'])
+@login_required
 def dashboard_stats():
     # קבלת התראות
     alerts = check_inspection_alerts()
