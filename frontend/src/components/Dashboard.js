@@ -24,16 +24,18 @@ const cabinetIcon = (status) => {
   });
 };
 
+const DEFAULT_STATS = {
+  teams: { total: 0, available: 0, on_duty: 0 },
+  hydrants: { total: 0, operational: 0, needs_maintenance: 0, out_of_service: 0 },
+  equipment_cabinets: { total: 0, ready: 0, needs_check: 0 },
+  tasks: { total: 0, pending: 0, in_progress: 0, completed: 0, urgent: 0 },
+  volunteers: { total: 0, available: 0, busy: 0, unavailable: 0 },
+  activities: { total: 0, planned: 0, ongoing: 0, completed: 0, this_month: 0 },
+  maintenance: { total: 0, this_month: 0 }
+};
+
 function Dashboard() {
-  const [stats, setStats] = useState({
-    teams: { total: 0, available: 0, on_duty: 0 },
-    hydrants: { total: 0, operational: 0, needs_maintenance: 0, out_of_service: 0 },
-    equipment_cabinets: { total: 0, ready: 0, needs_check: 0 },
-    tasks: { total: 0, pending: 0, in_progress: 0, completed: 0, urgent: 0 },
-    volunteers: { total: 0, available: 0, busy: 0, unavailable: 0 },
-    activities: { total: 0, planned: 0, ongoing: 0, completed: 0, this_month: 0 },
-    maintenance: { total: 0, this_month: 0 }
-  });
+  const [stats, setStats] = useState(DEFAULT_STATS);
   const [loading, setLoading] = useState(true);
   const [hydrants, setHydrants] = useState([]);
   const [cabinets, setCabinets] = useState([]);
@@ -41,28 +43,18 @@ function Dashboard() {
 
   // Create a safe stats object with guaranteed default values
   const safeStats = useMemo(() => {
-    const defaultStats = {
-      teams: { total: 0, available: 0, on_duty: 0 },
-      hydrants: { total: 0, operational: 0, needs_maintenance: 0, out_of_service: 0 },
-      equipment_cabinets: { total: 0, ready: 0, needs_check: 0 },
-      tasks: { total: 0, pending: 0, in_progress: 0, completed: 0, urgent: 0 },
-      volunteers: { total: 0, available: 0, busy: 0, unavailable: 0 },
-      activities: { total: 0, planned: 0, ongoing: 0, completed: 0, this_month: 0 },
-      maintenance: { total: 0, this_month: 0 }
-    };
-
     if (!stats || typeof stats !== 'object') {
-      return defaultStats;
+      return DEFAULT_STATS;
     }
 
     return {
-      teams: stats.teams && typeof stats.teams === 'object' ? stats.teams : defaultStats.teams,
-      hydrants: stats.hydrants && typeof stats.hydrants === 'object' ? stats.hydrants : defaultStats.hydrants,
-      equipment_cabinets: stats.equipment_cabinets && typeof stats.equipment_cabinets === 'object' ? stats.equipment_cabinets : defaultStats.equipment_cabinets,
-      tasks: stats.tasks && typeof stats.tasks === 'object' ? stats.tasks : defaultStats.tasks,
-      volunteers: stats.volunteers && typeof stats.volunteers === 'object' ? stats.volunteers : defaultStats.volunteers,
-      activities: stats.activities && typeof stats.activities === 'object' ? stats.activities : defaultStats.activities,
-      maintenance: stats.maintenance && typeof stats.maintenance === 'object' ? stats.maintenance : defaultStats.maintenance
+      teams: stats.teams && typeof stats.teams === 'object' ? stats.teams : DEFAULT_STATS.teams,
+      hydrants: stats.hydrants && typeof stats.hydrants === 'object' ? stats.hydrants : DEFAULT_STATS.hydrants,
+      equipment_cabinets: stats.equipment_cabinets && typeof stats.equipment_cabinets === 'object' ? stats.equipment_cabinets : DEFAULT_STATS.equipment_cabinets,
+      tasks: stats.tasks && typeof stats.tasks === 'object' ? stats.tasks : DEFAULT_STATS.tasks,
+      volunteers: stats.volunteers && typeof stats.volunteers === 'object' ? stats.volunteers : DEFAULT_STATS.volunteers,
+      activities: stats.activities && typeof stats.activities === 'object' ? stats.activities : DEFAULT_STATS.activities,
+      maintenance: stats.maintenance && typeof stats.maintenance === 'object' ? stats.maintenance : DEFAULT_STATS.maintenance
     };
   }, [stats]);
 
@@ -80,15 +72,15 @@ function Dashboard() {
       ]);
 
       // Safely set stats with fallback for each nested object
-      const safeStats = statsRes.data || {};
+      const responseData = statsRes?.data || {};
       setStats({
-        teams: safeStats.teams || { total: 0, available: 0, on_duty: 0 },
-        hydrants: safeStats.hydrants || { total: 0, operational: 0, needs_maintenance: 0, out_of_service: 0 },
-        equipment_cabinets: safeStats.equipment_cabinets || { total: 0, ready: 0, needs_check: 0 },
-        tasks: safeStats.tasks || { total: 0, pending: 0, in_progress: 0, completed: 0, urgent: 0 },
-        volunteers: safeStats.volunteers || { total: 0, available: 0, busy: 0, unavailable: 0 },
-        activities: safeStats.activities || { total: 0, planned: 0, ongoing: 0, completed: 0, this_month: 0 },
-        maintenance: safeStats.maintenance || { total: 0, this_month: 0 }
+        teams: (responseData.teams && typeof responseData.teams === 'object') ? responseData.teams : DEFAULT_STATS.teams,
+        hydrants: (responseData.hydrants && typeof responseData.hydrants === 'object') ? responseData.hydrants : DEFAULT_STATS.hydrants,
+        equipment_cabinets: (responseData.equipment_cabinets && typeof responseData.equipment_cabinets === 'object') ? responseData.equipment_cabinets : DEFAULT_STATS.equipment_cabinets,
+        tasks: (responseData.tasks && typeof responseData.tasks === 'object') ? responseData.tasks : DEFAULT_STATS.tasks,
+        volunteers: (responseData.volunteers && typeof responseData.volunteers === 'object') ? responseData.volunteers : DEFAULT_STATS.volunteers,
+        activities: (responseData.activities && typeof responseData.activities === 'object') ? responseData.activities : DEFAULT_STATS.activities,
+        maintenance: (responseData.maintenance && typeof responseData.maintenance === 'object') ? responseData.maintenance : DEFAULT_STATS.maintenance
       });
       setHydrants(Array.isArray(hydrantsRes.data) ? hydrantsRes.data.filter(h => h.latitude && h.longitude) : []);
       setCabinets(Array.isArray(cabinetsRes.data) ? cabinetsRes.data.filter(c => c.latitude && c.longitude) : []);
@@ -96,6 +88,7 @@ function Dashboard() {
     } catch (error) {
       console.error('Error loading dashboard data:', error);
       // Keep default stats structure on error (already initialized in state)
+      setStats(DEFAULT_STATS);
       setHydrants([]);
       setCabinets([]);
       setAlerts([]);

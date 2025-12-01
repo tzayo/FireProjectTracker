@@ -1,0 +1,7 @@
+docker build -t jbuild .
+docker run -it --rm -p 3000:3000 --entrypoint /bin/bash -v $(pwd):/app -w /app jbuild
+
+cd backend
+docker run -it --rm --entrypoint /bin/sh -v $(pwd):/app -w /app -p 5000:5000 registry1-docker-io.repo.cci.nokia.net/python:3.11-alpine3.20
+PIP_CONFIG_FILE=pip.ini pip install -r requirements.txt
+python3 app.py
