@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import Login from './components/Login';
 import Dashboard from './components/Dashboard';
 import Teams from './components/Teams';
 import Hydrants from './components/Hydrants';
@@ -10,8 +12,22 @@ import Volunteers from './components/Volunteers';
 import Activities from './components/Activities';
 import './App.css';
 
-function App() {
+function AppContent() {
   const [activeTab, setActiveTab] = useState('dashboard');
+  const { user, loading, login, logout } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="loading-container" dir="rtl">
+        <div className="loading-spinner"></div>
+        <p>טוען...</p>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Login onLogin={login} />;
+  }
 
   return (
     <Router>
@@ -22,6 +38,18 @@ function App() {
             <div className="header-title">
               <h1>🚒 מערכת ניהול כיבוי אש</h1>
               <p>קיבוץ גלאון</p>
+            </div>
+            <div className="header-user">
+              <span className="user-name">{user.name}</span>
+              <span className="user-role">
+                {user.role === 'manager' && 'מנהל'}
+                {user.role === 'commander' && 'מפקד'}
+                {user.role === 'member' && 'חבר צוות'}
+                {user.role === 'observer' && 'צופה'}
+              </span>
+              <button onClick={logout} className="logout-button">
+                התנתק
+              </button>
             </div>
           </div>
         </header>
@@ -111,6 +139,14 @@ function App() {
         </main>
       </div>
     </Router>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
 
