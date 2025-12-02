@@ -1,3 +1,4 @@
+
 # 🏗️ ארכיטקטורת המערכת - מערכת ניהול כיבוי אש
 ## System Architecture - Fire Safety Management System
 

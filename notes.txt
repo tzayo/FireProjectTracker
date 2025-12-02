@@ -2,6 +2,38 @@ docker build -t jbuild .
 docker run -it --rm -p 3000:3000 --entrypoint /bin/bash -v $(pwd):/app -w /app jbuild
 
 cd backend
-docker run -it --rm --entrypoint /bin/sh -v $(pwd):/app -w /app -p 5000:5000 registry1-docker-io.repo.cci.nokia.net/python:3.11-alpine3.20
-PIP_CONFIG_FILE=pip.ini pip install -r requirements.txt
-python3 app.py
+docker run -it --rm --entrypoint /bin/sh \
+ -v $(pwd):/app \
+ -w /app \
+ -p 5000:5000 \
+ registry1-docker-io.repo.cci.nokia.net/python:3.11-alpine3.20 \
+ -c "apk add --no-cache gcc musl-dev linux-headers && \
+     PIP_CONFIG_FILE=pip.ini pip install -r requirements.txt && \
+     python3 app.py"
+
+# Checking if backend and frontend servers are running
+ps aux | grep -E "(python.*app.py|npm.*start|node.*react)" | grep -v grep
+curl -s -o /dev/null -w "%{http_code}" http://localhost:5000/api/auth/check || echo "Backend not responding"
+cd /home/user/FireProjectTracker/backend && python app.py > /tmp/backend.log 2>&1 &
+sleep 3 && curl -s http://localhost:5000/api/auth/check
+ls -la /home/user/FireProjectTracker/backend/ | grep -E "(requirements|package)"
+cd /home/user/FireProjectTracker/backend && pip install -r requirements.txt
+python app.py > /tmp/backend.log 2>&1 &
+sleep 3 && curl -s http://localhost:5000/api/auth/check
+
+ls -lh /home/user/FireProjectTracker/backend/fire_department.db
+sqlite3 /home/user/FireProjectTracker/backend/fire_department.db "SELECT username, name, role, is_active FROM user LIMIT 5;"
+python -c " import sqlite3 conn = sqlite3.connect('fire_department.db') cursor = conn.cursor() cursor.execute('SELECT username, name, role, is_active FROM user LIMIT 5') users = cursor.fetchall() print('Users in database:') for user in users: print(f' Username: {user[0]}, Name: {user[1]}, Role: {user[2]}, Active: {user[3]}') conn.close() "
+echo "y" | python create_admin.py
+curl -s -c /tmp/cookies.txt -X POST http://localhost:5000/api/auth/login \ -H "Content-Type: application/json" \ -d '{"username":"admin","password":"admin123"}' | python -m json.tool
+curl -s -b /tmp/cookies.txt -X POST http://localhost:5000/api/auth/logout | python -m json.tool
+curl -s -b /tmp/cookies.txt http://localhost:5000/api/auth/check | python -m json.tool
+cat /tmp/cookies.txt
+rm -f /tmp/test_cookies.txt && \ echo "=== 1. Login ===" && \ curl -s -c /tmp/test_cookies.txt -X POST http://localhost:5000/api/auth/login \ -H "Content-Type: application/json" \ -d '{"username":"admin","password":"admin123"}' | python -m json.tool && \ echo -e "\n=== 2. Check auth status (should be authenticated) ===" && \ curl -s -b /tmp/test_cookies.txt http://localhost:5000/api/auth/check | python -m json.tool && \ echo -e "\n=== 3. Logout ===" && \ curl -s -b /tmp/test_cookies.txt -c /tmp/test_cookies.txt -X POST http://localhost:5000/api/auth/logout | python -m json.tool && \ echo -e "\n=== 4. Check auth status after logout (should be false) ===" && \ curl -s -b /tmp/test_cookies.txt http://localhost:5000/api/auth/check | python -m json.tool
+rm -f /tmp/test_cookies.txt
+curl -s -c /tmp/test_cookies.txt -X POST http://localhost:5000/api/auth/login -H "Content-Type: application/json" -d '{"username":"admin","password":"admin123"}' | python -m json.tool
+curl -s -b /tmp/test_cookies.txt http://localhost:5000/api/auth/check | python -m json.tool
+curl -s -b /tmp/test_cookies.txt -c /tmp/test_cookies.txt -X POST http://localhost:5000/api/auth/logout | python -m json.tool
+curl -s -b /tmp/test_cookies.txt http://localhost:5000/api/auth/check | python -m json.tool
+
+---
