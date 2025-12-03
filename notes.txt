@@ -1,3 +1,4 @@
+cd backend
 docker build -t jbuild .
 docker run -it --rm -p 3000:3000 --entrypoint /bin/bash -v $(pwd):/app -w /app jbuild
 
@@ -10,6 +11,22 @@ docker run -it --rm --entrypoint /bin/sh \
  -c "apk add --no-cache gcc musl-dev linux-headers && \
      PIP_CONFIG_FILE=pip.ini pip install -r requirements.txt && \
      python3 app.py"
+
+
+cd ../frontend
+docker run -it --rm --entrypoint /bin/sh \
+ -v $(pwd):/app \
+ -w /app \
+ -p 3000:3000 \
+ node:20-alpine \
+ -c "npm install && npm start"
+
+# docker run -it --rm --entrypoint /bin/bash \
+#   -v $(pwd):/app \
+#   -w /app/frontend \
+#   -p 3000:3000 \
+#   jbuild 
+
 
 # Checking if backend and frontend servers are running
 ps aux | grep -E "(python.*app.py|npm.*start|node.*react)" | grep -v grep
@@ -37,3 +54,13 @@ curl -s -b /tmp/test_cookies.txt -c /tmp/test_cookies.txt -X POST http://localho
 curl -s -b /tmp/test_cookies.txt http://localhost:5000/api/auth/check | python -m json.tool
 
 ---
+
+rm -f /tmp/verify_cookies.txt
+
+echo "TEST 1: Login with admin credentials" && curl -s -c /tmp/verify_cookies.txt -X POST http://localhost:5000/api/auth/login -H "Content-Type: application/json" -d '{"username":"admin","password":"admin123"}' | python -c "import sys, json; data=json.load(sys.stdin); print(f\"✅ Login successful - User: {data['user']['username']}, Role: {data['user']['role']}\")"
+echo "TEST 2: Verify authentication status after login" && curl -s -b /tmp/verify_cookies.txt http://localhost:5000/api/auth/check | python -c "import sys, json; data=json.load(sys.stdin); print(f\"✅ Authenticated: {data['authenticated']}\" if data['authenticated'] else \"❌ Not authenticated\")"
+echo "TEST 3: Call logout endpoint" && curl -s -b /tmp/verify_cookies.txt -c /tmp/verify_cookies.txt -X POST http://localhost:5000/api/auth/logout | python -c "import sys, json; data=json.load(sys.stdin); print(f\"✅ {data['message']}\")"
+echo "TEST 4: Verify session cleared after logout" && curl -s -b /tmp/verify_cookies.txt http://localhost:5000/api/auth/check | python -c "import sys, json; data=json.load(sys.stdin); print(f\"✅ Session cleared - Authenticated: {data['authenticated']}\" if not data['authenticated'] else \"❌ Session still active\")"
+
+curl -s -o /dev/null -w "%{http_code}" http://localhost:5000/api/auth/check
+cd /home/user/FireProjectTracker/backend && python app.py > /tmp/backend_verify.log 2>&1 &

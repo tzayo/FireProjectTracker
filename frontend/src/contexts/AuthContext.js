@@ -21,6 +21,17 @@ export const AuthProvider = ({ children }) => {
 
   const checkAuth = async () => {
     try {
+      // First check localStorage for token and user
+      const token = localStorage.getItem('token');
+      const storedUser = localStorage.getItem('user');
+      
+      if (token && storedUser) {
+        setUser(JSON.parse(storedUser));
+        setLoading(false);
+        return;
+      }
+      
+      // Fall back to session-based auth check
       const response = await fetch('http://localhost:5000/api/auth/check', {
         credentials: 'include',
       });

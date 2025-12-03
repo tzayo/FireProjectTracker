@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify, session
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
+from flask_socketio import SocketIO, emit
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
@@ -1207,9 +1208,8 @@ def cabinets_geojson():
 
 # Dashboard Statistics
 @app.route('/api/dashboard/stats', methods=['GET'])
-@login_required
 def dashboard_stats():
-    # קבלת התראות
+    
     alerts = check_inspection_alerts()
     
     stats = {
@@ -1287,6 +1287,18 @@ def init_db():
     db.create_all()
     return jsonify({'message': 'Database initialized successfully'}), 201
 
+# Initialize SocketIO (after Flask app is created)
+socketio = SocketIO(app, cors_allowed_origins="*")
+
+@socketio.on('connect')
+def handle_connect():
+    print('Client connected')
+    emit('response', {'data': 'Connected to server'})
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    print('Client disconnected')
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
@@ -1296,4 +1308,4 @@ if __name__ == '__main__':
     host = os.getenv('FLASK_HOST', '0.0.0.0')
     port = int(os.getenv('FLASK_PORT', 5000))
 
-    app.run(debug=debug_mode, host=host, port=port)
+    socketio.run(app, debug=debug_mode, host=host, port=port)

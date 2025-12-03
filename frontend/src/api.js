@@ -10,6 +10,48 @@ const api = axios.create({
   withCredentials: true,
 });
 
+// Add JWT token to all requests if available
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Handle 401 responses (expired token)
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Token expired or invalid
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
+// Authentication API
+export const login = (username, password) => 
+  axios.post(`${API_BASE_URL}/auth/login`, { username, password });
+
+export const register = (userData) => 
+  axios.post(`${API_BASE_URL}/auth/register`, userData);
+
+export const getCurrentUser = () => api.get('/auth/me');
+
+export const changePassword = (currentPassword, newPassword) =>
+  api.post('/auth/change-password', { current_password: currentPassword, new_password: newPassword });
+
+export const getRoles = () => api.get('/auth/roles');
+
 // Teams API
 export const getTeams = () => api.get('/teams');
 export const getTeam = (id) => api.get(`/teams/${id}`);

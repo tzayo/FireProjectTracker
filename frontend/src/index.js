@@ -9,3 +9,12 @@ root.render(
     <App />
   </React.StrictMode>
 );
+
+// Unregister service worker to prevent caching issues
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then((registrations) => {
+    for (let registration of registrations) {
+      registration.unregister();
+    }
+  });
+}

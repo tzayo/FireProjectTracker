@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { login } from '../api';
 import '../App.css';
 
 function Login({ onLogin }) {
@@ -13,24 +14,29 @@ function Login({ onLogin }) {
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({ username, password }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        onLogin(data.user);
+      const response = await login(username, password);
+      
+      if (response.data.success && response.data.user) {
+        // Store token
+        localStorage.setItem('token', response.data.token);
+        
+        // Normalize user data
+        const userData = {
+          id: response.data.user.id,
+          username: response.data.user.username,
+          email: response.data.user.email,
+          name: response.data.user.full_name || response.data.user.name || response.data.user.username,
+          role: response.data.user.role,
+          permissions: response.data.user.permissions || []
+        };
+        localStorage.setItem('user', JSON.stringify(userData));
+        onLogin(userData);
       } else {
-        setError(data.error || 'שגיאה בהתחברות');
+        setError(response.data?.message || 'שגיאה בהתחברות');
       }
     } catch (err) {
-      setError('שגיאה בחיבור לשרת');
+      console.error('Login error:', err);
+      setError(err.response?.data?.message || 'שגיאה בחיבור לשרת');
     } finally {
       setLoading(false);
     }
