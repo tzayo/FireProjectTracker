@@ -1,41 +1,67 @@
-# 🚒 מערכת ניהול כיבוי אש - קיבוץ
-## Fire Safety Management System - Complete Solution
+# 🚒 Fire Safety Management System - Kibbutz
+## Complete Solution for Fire Department Management
 
 ---
 
-## 🎯 סקירה
+## 🎯 Overview
 
-מערכת ניהול מקיפה לתשתיות כיבוי אש בקיבוץ, המאפשרת מעקב אחר ציוד, תחזוקה שוטפת, וניהול צוותי חירום.
+A comprehensive management system for fire safety infrastructure in kibbutz communities, enabling equipment tracking, routine maintenance, and emergency team management.
 
-### ✨ תכונות מרכזיות
+### ✨ Key Features
 
-- ✅ **ניהול הידרנטים** - מעקב מלא על כל ברזי הכיבוי עם GPS, לחץ מים, וסטטוס
-- ✅ **ארונות ציוד** - ניהול מלאי מפורט כולל תאריכי פג תוקף
-- ✅ **מפות אינטראקטיביות** - הצגה ויזואלית של כל הנכסים עם סימון צבעוני
-- ✅ **התראות אוטומטיות** - על בדיקות, פג תוקף, ומשימות שעברו דדליין
-- ✅ **חישובי קרבה** - זיהוי אוטומטי של ציוד קרוב (100 מטר)
-- ✅ **ניהול משימות** - תכנון ומעקב אחר תחזוקה שוטפת
-- ✅ **תמיכה בעברית** - ממשק מלא RTL
-- ✅ **PWA Support** - עבודה אופליין ואפשרות התקנה כאפליקציה
+- ✅ **Hydrant Management** - Complete tracking of all fire hydrants with GPS, water pressure, and status
+- ✅ **Equipment Cabinets** - Detailed inventory management including expiration dates
+- ✅ **Interactive Maps** - Visual display of all assets with color-coded markers
+- ✅ **Automated Alerts** - For inspections, expiration dates, and overdue tasks
+- ✅ **Proximity Calculations** - Automatic identification of nearby equipment (100 meters)
+- ✅ **Task Management** - Planning and tracking routine maintenance
+- ✅ **Hebrew Support** - Full RTL interface
+- ✅ **PWA Support** - Offline functionality and app installation
 
 ---
 
-## 🚀 התקנה מהירה
+## 🚀 Quick Installation
 
-### דרישות מקדימות
+### Prerequisites
 - Python 3.8+
 - Node.js 18+
-- דפדפן מודרני
+- Modern web browser
+- Docker & Docker Compose (optional, recommended)
 
-### התקנה
+### Installation
 
-#### שיטה 1: התקנה אוטומטית (מומלץ)
+#### Method 1: Docker (Recommended) 🐳
+The easiest and fastest way to run the system:
+
+```bash
+# First time setup (builds containers)
+docker-compose up --build
+
+# Regular startup (after initial build)
+docker-compose up
+
+# Run in background
+docker-compose up -d
+
+# Stop the system
+docker-compose down
+```
+
+**Common Docker Issues:**
+- If you get "port is already allocated" error, ensure no other process is using ports 3000 or 5000
+- Check Docker is running: `docker ps`
+- **macOS:** If you get "Cannot connect to the Docker daemon", launch Docker Desktop from Applications
+
+→ Frontend opens at http://localhost:3000
+→ Backend API available at http://localhost:5000
+
+#### Method 2: Automated Installation
 ```bash
 ./start-system.sh
 ```
-הסקריפט יתקין את כל התלויות ויפעיל את המערכת אוטומטית.
+The script will install all dependencies and start the system automatically.
 
-#### שיטה 2: התקנה ידנית
+#### Method 3: Manual Installation
 
 **Backend (Flask/Python)**
 ```bash
@@ -50,7 +76,7 @@ cp .env.example .env
 
 python app.py
 ```
-→ השרת עולה על http://localhost:5000
+→ Server runs on http://localhost:5000
 
 **Frontend (React)**
 ```bash
@@ -63,182 +89,183 @@ cp .env.example .env
 
 npm start
 ```
-→ הממשק נפתח על http://localhost:3000
+→ Interface opens at http://localhost:3000
 
-### ⚙️ תצורה (Configuration)
+### ⚙️ Configuration
 
-המערכת משתמשת בקבצי `.env` לתצורה:
+The system uses `.env` files for configuration:
 
-- **Backend:** `backend/.env` - הגדרות שרת, מסד נתונים, CORS
-- **Frontend:** `frontend/.env` - כתובת API, הגדרות מפה
+- **Backend:** `backend/.env` - Server settings, database, CORS
+- **Frontend:** `frontend/.env` - API address, map settings
 
-ראה [SECURITY.md](SECURITY.md) למידע מפורט על הגדרות אבטחה.
-
----
-
-## 📚 מדריכים
-
-- **[מדריך התחלה מהירה](QUICKSTART.md)** - התקנה והפעלה ב-5 דקות
-- **[מדריך מלא](SYSTEM_GUIDE.md)** - תיעוד מקיף של כל התכונות
-- **[API Reference](SYSTEM_GUIDE.md#api-reference)** - תיעוד מלא של כל ה-endpoints
+See [SECURITY.md](SECURITY.md) for detailed security settings information.
 
 ---
 
-## 🏗️ ארכיטקטורה
+## 📚 Guides
+
+- **[Quick Start Guide](QUICKSTART.md)** - Installation and setup in 5 minutes
+- **[Complete Guide](SYSTEM_GUIDE.md)** - Comprehensive documentation of all features
+- **[API Reference](SYSTEM_GUIDE.md#api-reference)** - Full documentation of all endpoints
+- **[Docker Guide](DOCKER.md)** - Docker setup and troubleshooting
+
+---
+
+## 🏗️ Architecture
 
 ### Frontend (React)
-- **React 18** - ממשק משתמש דינמי
-- **React Router** - ניווט בין עמודים
-- **Leaflet** - מפות אינטראקטיביות
-- **Axios** - תקשורת עם השרת
-- **Tailwind CSS** - עיצוב רספונסיבי
-- **RTL Support** - תמיכה מלאה בעברית
+- **React 18** - Dynamic user interface
+- **React Router** - Page navigation
+- **Leaflet** - Interactive maps
+- **Axios** - Server communication
+- **Tailwind CSS** - Responsive design
+- **RTL Support** - Full Hebrew support
 
 ### Backend (Python/Flask)
-- **Flask** - שרת API
-- **SQLAlchemy** - ORM למסד נתונים
-- **SQLite** - מסד נתונים (ניתן לשדרג ל-PostgreSQL)
-- **Flask-CORS** - תמיכה ב-Cross-Origin Requests
+- **Flask** - API server
+- **SQLAlchemy** - Database ORM
+- **SQLite** - Database (can upgrade to PostgreSQL)
+- **Flask-CORS** - Cross-Origin Request support
 
 > **Note:** An incomplete TypeScript/Express backend implementation has been archived in `/archive` folder. The Flask backend is the official, production-ready implementation with all features.
 
 ### Database Models
-- **Hydrants** - הידרנטים עם GPS ומאפיינים טכניים
-- **Equipment Cabinets** - ארונות ציוד
-- **Equipment Items** - פריטי ציוד בודדים עם תאריכי פג תוקף
-- **Tasks** - משימות מתוזמנות
-- **Teams** - צוותי כיבוי
-- **Volunteers** - מתנדבים
-- **Activities** - פעילויות ואימונים
-- **Maintenance Records** - תיעוד תחזוקה
+- **Hydrants** - Fire hydrants with GPS and technical specifications
+- **Equipment Cabinets** - Equipment storage locations
+- **Equipment Items** - Individual equipment items with expiration dates
+- **Tasks** - Scheduled maintenance tasks
+- **Teams** - Fire response teams
+- **Volunteers** - Volunteer management
+- **Activities** - Training and drills
+- **Maintenance Records** - Maintenance documentation
 
 ---
 
-## 🎨 ממשק המשתמש
+## 🎨 User Interface
 
-### עמודים במערכת
+### System Pages
 
-1. **🏠 לוח בקרה** - סקירה כללית, מפה אינטראקטיבית, התראות
-2. **👥 צוותים** - ניהול צוותי כיבוי וזמינות
-3. **🚰 הידרנטים** - ניהול ברזי כיבוי + מפה
-4. **🧰 ארונות ציוד** - ניהול ארונות + מלאי מפורט
-5. **✓ משימות** - ניהול משימות תחזוקה
-6. **🔧 תחזוקה** - תיעוד עבודות תחזוקה
-7. **👤 מתנדבים** - ניהול מתנדבים וכישורים
-8. **📋 פעילויות** - תיעוד אימונים ותרגילים
+1. **🏠 Dashboard** - Overview, interactive map, alerts
+2. **👥 Teams** - Fire team management and availability
+3. **🚰 Hydrants** - Fire hydrant management + map
+4. **🧰 Equipment Cabinets** - Cabinet management + detailed inventory
+5. **✓ Tasks** - Maintenance task management
+6. **🔧 Maintenance** - Maintenance work documentation
+7. **👤 Volunteers** - Volunteer and skills management
+8. **📋 Activities** - Training and drill documentation
 
 ---
 
-## 🔧 API Endpoints - סיכום
+## 🔧 API Endpoints - Summary
 
 ### Dashboard
-- `GET /api/dashboard/stats` - סטטיסטיקות מלאות
-- `GET /api/dashboard/alerts` - התראות פעילות
+- `GET /api/dashboard/stats` - Complete statistics
+- `GET /api/dashboard/alerts` - Active alerts
 
 ### Hydrants
-- `GET /api/hydrants` - רשימת הידרנטים
-- `POST /api/hydrants` - הוספת הידרנט
-- `GET/PUT/DELETE /api/hydrants/:id` - ניהול הידרנט בודד
-- `GET /api/hydrants/map` - GeoJSON למפות
-- `GET /api/hydrants/:id/nearby-cabinets` - ארונות קרובים
+- `GET /api/hydrants` - List hydrants
+- `POST /api/hydrants` - Add hydrant
+- `GET/PUT/DELETE /api/hydrants/:id` - Manage individual hydrant
+- `GET /api/hydrants/map` - GeoJSON for maps
+- `GET /api/hydrants/:id/nearby-cabinets` - Nearby cabinets
 
 ### Equipment Cabinets
-- `GET /api/equipment-cabinets` - רשימת ארונות
-- `POST /api/equipment-cabinets` - הוספת ארון
-- `GET/PUT/DELETE /api/equipment-cabinets/:id` - ניהול ארון
-- `GET /api/cabinets/map` - GeoJSON למפות
-- `GET /api/cabinets/:id/nearby-hydrants` - הידרנטים קרובים
-- `GET /api/cabinets/:id/items` - פריטים בארון
-- `POST /api/cabinets/:id/items` - הוספת פריט
+- `GET /api/equipment-cabinets` - List cabinets
+- `POST /api/equipment-cabinets` - Add cabinet
+- `GET/PUT/DELETE /api/equipment-cabinets/:id` - Manage cabinet
+- `GET /api/cabinets/map` - GeoJSON for maps
+- `GET /api/cabinets/:id/nearby-hydrants` - Nearby hydrants
+- `GET /api/cabinets/:id/items` - Items in cabinet
+- `POST /api/cabinets/:id/items` - Add item
 
 ### Equipment Items
-- `GET/PUT/DELETE /api/equipment-items/:id` - ניהול פריט ציוד
+- `GET/PUT/DELETE /api/equipment-items/:id` - Manage equipment item
 
 ### Tasks
-- `GET /api/tasks` - רשימת משימות (עם פילטרים)
-- `POST /api/tasks` - יצירת משימה
-- `GET/PUT/DELETE /api/tasks/:id` - ניהול משימה
+- `GET /api/tasks` - List tasks (with filters)
+- `POST /api/tasks` - Create task
+- `GET/PUT/DELETE /api/tasks/:id` - Manage task
 
 ### Teams, Volunteers, Activities, Maintenance
-- מלוא ה-CRUD operations לכל מודול
+- Full CRUD operations for each module
 
 ---
 
-## 🔐 אבטחה
+## 🔐 Security
 
-### Development (מצב נוכחי)
-- ✅ CORS מוגדר דרך משתני סביבה
-- ✅ Debug mode ניתן להשבתה
-- ✅ Secret key ניתן להגדרה
-- ⚠️ אין מערכת אימות (התשתית קיימת)
-- ⚠️ SQLite לא מתאים ל-production
+### Development (Current State)
+- ✅ CORS configured via environment variables
+- ✅ Debug mode can be disabled
+- ✅ Secret key can be configured
+- ⚠️ No authentication system (infrastructure exists)
+- ⚠️ SQLite not suitable for production
 
-### Production (נדרש לפני הפצה)
-המערכת הנוכחית מיועדת לפיתוח. להפעלה ב-production יש לבצע:
+### Production (Required Before Deployment)
+The current system is designed for development. For production deployment:
 
-**קריטי:**
-- [ ] הגדרת SECRET_KEY אקראי וחזק
+**Critical:**
+- [ ] Set random and strong SECRET_KEY
 - [ ] FLASK_DEBUG=False
-- [ ] שימוש ב-PostgreSQL במקום SQLite
-- [ ] הגדרת CORS_ORIGINS לדומיין ספציפי
-- [ ] הפעלת HTTPS
+- [ ] Use PostgreSQL instead of SQLite
+- [ ] Set CORS_ORIGINS to specific domain
+- [ ] Enable HTTPS
 
-**חשוב:**
-- [ ] מימוש מערכת אימות (JWT)
-- [ ] הוספת rate limiting
-- [ ] הוספת input validation
-- [ ] הגדרת גיבויים אוטומטיים
+**Important:**
+- [ ] Implement authentication system (JWT)
+- [ ] Add rate limiting
+- [ ] Add input validation
+- [ ] Set up automated backups
 
-**מומלץ:**
-- [ ] שימוש ב-Gunicorn/uWSGI
+**Recommended:**
+- [ ] Use Gunicorn/uWSGI
 - [ ] Reverse proxy (Nginx)
-- [ ] Monitoring ו-logging
+- [ ] Monitoring and logging
 - [ ] Security headers
 
-📖 **קרא את [SECURITY.md](SECURITY.md) למדריך מלא**
+📖 **Read [SECURITY.md](SECURITY.md) for complete guide**
 
 ---
 
-## 📱 שימוש מובייל
+## 📱 Mobile Usage
 
-המערכת מותאמת למכשירים ניידים:
-- ממשק רספונסיבי
-- תפריט המבורגר בנייד
-- מפות אינטראקטיביות עובדות במובייל
-- אפשרות התקנה כאפליקציה (PWA)
+The system is optimized for mobile devices:
+- Responsive interface
+- Hamburger menu on mobile
+- Interactive maps work on mobile
+- Can be installed as app (PWA)
 
-**להתקנה על הטלפון:**
-1. פתח את האתר בדפדפן (Chrome/Safari)
-2. לחץ על "הוסף למסך הבית" / "Install App"
-3. האפליקציה תיפתח כאפליקציה רגילה
-
----
-
-## 🛠️ פיתוח והרחבה
-
-### הוספת שדות נוספים
-ערוך את המודלים ב-`backend/app.py`
-
-### הוספת API endpoints
-הוסף routes ב-`backend/app.py`
-
-### הוספת עמודים חדשים
-1. צור קומפוננטה ב-`frontend/src/components/`
-2. הוסף route ב-`frontend/src/App.js`
-3. הוסף קישור בתפריט הניווט
+**To install on phone:**
+1. Open the site in browser (Chrome/Safari)
+2. Click "Add to Home Screen" / "Install App"
+3. The app will open like a regular application
 
 ---
 
-## 📊 דוגמאות שימוש ב-API
+## 🛠️ Development and Extension
 
-### יצירת הידרנט חדש
+### Adding Additional Fields
+Edit models in `backend/app.py`
+
+### Adding API Endpoints
+Add routes in `backend/app.py`
+
+### Adding New Pages
+1. Create component in `frontend/src/components/`
+2. Add route in `frontend/src/App.js`
+3. Add link in navigation menu
+
+---
+
+## 📊 API Usage Examples
+
+### Create New Hydrant
 ```bash
 curl -X POST http://localhost:5000/api/hydrants \
   -H "Content-Type: application/json" \
   -d '{
     "serial_number": "H-001",
-    "name": "הידרנט מרכזי",
-    "location": "ליד המועדון",
+    "name": "Central Hydrant",
+    "location": "Near the club",
     "latitude": 31.4117,
     "longitude": 34.6667,
     "hydrant_type": "ground",
@@ -248,49 +275,49 @@ curl -X POST http://localhost:5000/api/hydrants \
   }'
 ```
 
-### קבלת התראות פעילות
+### Get Active Alerts
 ```bash
 curl http://localhost:5000/api/dashboard/alerts
 ```
 
-### חיפוש ארונות קרובים להידרנט
+### Search for Cabinets Near Hydrant
 ```bash
 curl http://localhost:5000/api/hydrants/1/nearby-cabinets?max_distance=100
 ```
 
 ---
 
-## 🎯 תכנון עתידי
+## 🎯 Future Planning
 
-רעיונות להרחבות:
-- [ ] מערכת משתמשים מלאה עם הרשאות
-- [ ] העלאת תמונות לענן
-- [ ] ייצוא דוחות PDF/Excel
-- [ ] התראות SMS/Email
-- [ ] אפליקציה ניידת native
-- [ ] אינטגרציה עם מערכות חיצוניות
-- [ ] דשבורד אנליטי עם גרפים
-
----
-
-## 📞 תמיכה
-
-- 📖 [מדריך מהיר](QUICKSTART.md)
-- 📚 [מדריך מלא](SYSTEM_GUIDE.md)
-- 🐛 דיווח על באגים: פתח issue או פנה למנהל המערכת
+Ideas for extensions:
+- [ ] Full user system with permissions
+- [ ] Cloud image upload
+- [ ] PDF/Excel report export
+- [ ] SMS/Email alerts
+- [ ] Native mobile application
+- [ ] Integration with external systems
+- [ ] Analytics dashboard with charts
 
 ---
 
-**גרסה:** 2.0  
-**מפותח עבור:** קיבוץ - מערכת ניהול כיבוי אש  
-**טכנולוגיות:** React, Flask, SQLite, Leaflet  
-**רישיון:** MIT  
-**תאריך:** 2025-10-10
+## 📞 Support
+
+- 📖 [Quick Guide](QUICKSTART.md)
+- 📚 [Complete Guide](SYSTEM_GUIDE.md)
+- 🐳 [Docker Guide](DOCKER.md)
+- 🐛 Bug reports: Open an issue or contact system administrator
 
 ---
 
-## 🙏 תודות
+**Version:** 2.0
+**Developed for:** Kibbutz - Fire Safety Management System
+**Technologies:** React, Flask, SQLite, Leaflet
+**License:** MIT
+**Date:** 2025-10-10
 
-מערכת זו פותחה לשימוש קיבוצים וקהילות לניהול בטיחות ותשתיות כיבוי אש.  
-תרמו, שפרו, והתאימו לצרכים שלכם!
+---
 
+## 🙏 Acknowledgments
+
+This system was developed for kibbutz communities and communities to manage fire safety and infrastructure.
+Contribute, improve, and adapt to your needs!
