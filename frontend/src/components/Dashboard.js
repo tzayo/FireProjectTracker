@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, CircleMarker } from 'react-leaflet';
-import { getDashboardStats } from '../api';
-import axios from 'axios';
+import { getDashboardStats, getHydrants, getEquipmentCabinets, getDashboardAlerts } from '../api';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -66,9 +65,9 @@ function Dashboard() {
     try {
       const [statsRes, hydrantsRes, cabinetsRes, alertsRes] = await Promise.all([
         getDashboardStats(),
-        axios.get('http://localhost:5000/api/hydrants'),
-        axios.get('http://localhost:5000/api/equipment-cabinets'),
-        axios.get('http://localhost:5000/api/dashboard/alerts')
+        getHydrants(),
+        getEquipmentCabinets(),
+        getDashboardAlerts()
       ]);
 
       // Safely set stats with fallback for each nested object
