@@ -432,6 +432,7 @@ function Activities() {
                     className="form-input"
                     value={formData.created_by}
                     onChange={(e) => setFormData({ ...formData, created_by: e.target.value })}
+                    autoComplete="name"
                   />
                 </div>
               </div>
