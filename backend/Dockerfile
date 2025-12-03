@@ -1,15 +1,15 @@
-FROM registry1-docker-io.repo.cci.nokia.net/python:3.11-alpine3.20
+FROM registry1-docker-io.repo.cci.nokia.net/python:3.13-alpine
 
 WORKDIR /app
 
-# Install system dependencies
-RUN apk add --no-cache gcc musl-dev linux-headers
+# Install system dependencies including SSL certificates
+RUN apk add --no-cache gcc musl-dev linux-headers ca-certificates
 
 # Copy requirements first (for better caching)
 COPY requirements.txt .
 
-# Install Python dependencies
-RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
+# Install Python dependencies with SSL certificate handling
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel certifi && \
     pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
