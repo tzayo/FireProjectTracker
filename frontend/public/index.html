@@ -35,6 +35,18 @@
     
     <!-- Service Worker Registration -->
     <script>
+      // Unregister service worker
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then((registrations) => {
+          for (let registration of registrations) {
+            registration.unregister();
+          }
+        });
+      }
+    </script>
+
+    <!-- Service Worker Registration (Disabled)
+    <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('%PUBLIC_URL%/service-worker.js')
@@ -46,6 +58,7 @@
             });
         });
       }
-    </script>
+    </script> 
+    -->
   </body>
 </html>

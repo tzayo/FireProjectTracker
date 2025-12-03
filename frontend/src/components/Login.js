@@ -1,12 +1,16 @@
 import React, { useState } from 'react';
-import { login } from '../api';
+import { useNavigate } from 'react-router-dom';
+import { login as loginAPI } from '../api';
+import { useAuth } from '../contexts/AuthContext';
 import '../App.css';
 
-function Login({ onLogin }) {
+function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -14,12 +18,9 @@ function Login({ onLogin }) {
     setLoading(true);
 
     try {
-      const response = await login(username, password);
+      const response = await loginAPI(username, password);
       
       if (response.data.success && response.data.user) {
-        // Store token
-        localStorage.setItem('token', response.data.token);
-        
         // Normalize user data
         const userData = {
           id: response.data.user.id,
@@ -29,8 +30,12 @@ function Login({ onLogin }) {
           role: response.data.user.role,
           permissions: response.data.user.permissions || []
         };
-        localStorage.setItem('user', JSON.stringify(userData));
-        onLogin(userData);
+        
+        // Call auth context login with user data
+        login(userData);
+        
+        // Navigate to dashboard
+        navigate('/');
       } else {
         setError(response.data?.message || 'שגיאה בהתחברות');
       }
