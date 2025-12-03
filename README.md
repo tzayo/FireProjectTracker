@@ -26,16 +26,42 @@
 - Python 3.8+
 - Node.js 18+
 - דפדפן מודרני
+- Docker & Docker Compose (אופציונלי, מומלץ)
 
 ### התקנה
 
-#### שיטה 1: התקנה אוטומטית (מומלץ)
+#### שיטה 1: Docker (מומלץ) 🐳
+הדרך הקלה והמהירה ביותר להריץ את המערכת:
+
+```bash
+# הרצת המערכת בפעם הראשונה (בונה את הקונטיינרים)
+docker-compose up --build
+
+# הרצה רגילה (אחרי הבנייה הראשונה)
+docker-compose up
+
+# הרצה ברקע
+docker-compose up -d
+
+# עצירת המערכת
+docker-compose down
+```
+
+**נושאים נפוצים עם Docker:**
+- אם נתקלת בשגיאת "port is already allocated", וודא ששום תהליך אחר לא משתמש בפורט 3000 או 5000
+- בדוק שהשירות Docker רץ: `docker ps`
+- **macOS:** אם תקבל "Cannot connect to the Docker daemon", הפעל את Docker Desktop מתוך Applications
+
+→ הממשק נפתח על http://localhost:3000
+→ Backend API זמין על http://localhost:5000
+
+#### שיטה 2: התקנה אוטומטית
 ```bash
 ./start-system.sh
 ```
 הסקריפט יתקין את כל התלויות ויפעיל את המערכת אוטומטית.
 
-#### שיטה 2: התקנה ידנית
+#### שיטה 3: התקנה ידנית
 
 **Backend (Flask/Python)**
 ```bash
