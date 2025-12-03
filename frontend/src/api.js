@@ -39,11 +39,11 @@ api.interceptors.response.use(
 );
 
 // Authentication API
-export const login = (username, password) => 
-  axios.post(`${API_BASE_URL}/auth/login`, { username, password });
+export const login = (username, password) =>
+  api.post('/auth/login', { username, password });
 
-export const register = (userData) => 
-  axios.post(`${API_BASE_URL}/auth/register`, userData);
+export const register = (userData) =>
+  api.post('/auth/register', userData);
 
 export const getCurrentUser = () => api.get('/auth/me');
 

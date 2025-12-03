@@ -22,7 +22,12 @@ app.config['ENV'] = os.getenv('FLASK_ENV', 'development')
 
 # CORS Configuration - parse comma-separated origins
 cors_origins = os.getenv('CORS_ORIGINS', 'http://localhost:3000').split(',')
-CORS(app, origins=cors_origins, supports_credentials=True)
+CORS(app,
+     resources={r"/api/*": {"origins": cors_origins}},
+     supports_credentials=True,
+     allow_headers=['Content-Type', 'Authorization', 'X-Requested-With'],
+     methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+     expose_headers=['Content-Type', 'Authorization'])
 
 # Database configuration
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -297,9 +302,11 @@ class User(UserMixin, db.Model):
             'id': self.id,
             'username': self.username,
             'name': self.name,
+            'full_name': self.name,  # Alias for compatibility with frontend
             'email': self.email,
             'phone': self.phone,
             'role': self.role,
+            'permissions': [],  # Placeholder for future permission system
             'team_id': self.team_id,
             'availability_status': self.availability_status,
             'is_active': self.is_active,
@@ -521,6 +528,7 @@ def login():
     db.session.commit()
 
     return jsonify({
+        'success': True,
         'message': 'Login successful',
         'user': user.to_dict()
     }), 200
