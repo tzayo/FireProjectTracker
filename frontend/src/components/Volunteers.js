@@ -247,6 +247,7 @@ function Volunteers() {
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     required
+                    autoComplete="name"
                   />
                 </div>
 
@@ -257,6 +258,7 @@ function Volunteers() {
                     className="form-input"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    autoComplete="tel"
                   />
                 </div>
 
@@ -267,6 +269,7 @@ function Volunteers() {
                     className="form-input"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    autoComplete="email"
                   />
                 </div>
 

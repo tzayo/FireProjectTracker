@@ -351,6 +351,7 @@ function Tasks() {
                       value={formData.assigned_to}
                       onChange={(e) => setFormData({ ...formData, assigned_to: e.target.value })}
                       placeholder="שם האחראי"
+                      autoComplete="name"
                     />
                   </div>
                 </div>

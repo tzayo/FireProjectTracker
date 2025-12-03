@@ -321,6 +321,7 @@ function Maintenance() {
                       value={formData.performed_by}
                       onChange={(e) => setFormData({ ...formData, performed_by: e.target.value })}
                       placeholder="שם המבצע"
+                      autoComplete="name"
                     />
                   </div>
 

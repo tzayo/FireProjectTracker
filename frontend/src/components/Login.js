@@ -68,6 +68,7 @@ function Login({ onLogin }) {
               required
               autoFocus
               disabled={loading}
+              autoComplete="username"
             />
           </div>
 
@@ -80,6 +81,7 @@ function Login({ onLogin }) {
               onChange={(e) => setPassword(e.target.value)}
               required
               disabled={loading}
+              autoComplete="current-password"
             />
           </div>
 

@@ -229,6 +229,7 @@ function Teams() {
                     className="form-input"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    autoComplete="tel"
                   />
                 </div>
               </div>
