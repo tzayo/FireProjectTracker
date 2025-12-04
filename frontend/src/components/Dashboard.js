@@ -28,6 +28,7 @@ const DEFAULT_STATS = {
   teams: { total: 0, available: 0, on_duty: 0 },
   hydrants: { total: 0, operational: 0, needs_maintenance: 0, out_of_service: 0 },
   equipment_cabinets: { total: 0, ready: 0, needs_check: 0 },
+  equipment_items: { total: 0, good: 0, needs_replacement: 0, missing: 0 },
   tasks: { total: 0, pending: 0, in_progress: 0, completed: 0, urgent: 0 },
   volunteers: { total: 0, available: 0, busy: 0, unavailable: 0 },
   activities: { total: 0, planned: 0, ongoing: 0, completed: 0, this_month: 0 },
@@ -51,6 +52,7 @@ function Dashboard() {
       teams: stats.teams && typeof stats.teams === 'object' ? stats.teams : DEFAULT_STATS.teams,
       hydrants: stats.hydrants && typeof stats.hydrants === 'object' ? stats.hydrants : DEFAULT_STATS.hydrants,
       equipment_cabinets: stats.equipment_cabinets && typeof stats.equipment_cabinets === 'object' ? stats.equipment_cabinets : DEFAULT_STATS.equipment_cabinets,
+      equipment_items: stats.equipment_items && typeof stats.equipment_items === 'object' ? stats.equipment_items : DEFAULT_STATS.equipment_items,
       tasks: stats.tasks && typeof stats.tasks === 'object' ? stats.tasks : DEFAULT_STATS.tasks,
       volunteers: stats.volunteers && typeof stats.volunteers === 'object' ? stats.volunteers : DEFAULT_STATS.volunteers,
       activities: stats.activities && typeof stats.activities === 'object' ? stats.activities : DEFAULT_STATS.activities,
@@ -77,6 +79,7 @@ function Dashboard() {
         teams: (responseData.teams && typeof responseData.teams === 'object') ? responseData.teams : DEFAULT_STATS.teams,
         hydrants: (responseData.hydrants && typeof responseData.hydrants === 'object') ? responseData.hydrants : DEFAULT_STATS.hydrants,
         equipment_cabinets: (responseData.equipment_cabinets && typeof responseData.equipment_cabinets === 'object') ? responseData.equipment_cabinets : DEFAULT_STATS.equipment_cabinets,
+        equipment_items: (responseData.equipment_items && typeof responseData.equipment_items === 'object') ? responseData.equipment_items : DEFAULT_STATS.equipment_items,
         tasks: (responseData.tasks && typeof responseData.tasks === 'object') ? responseData.tasks : DEFAULT_STATS.tasks,
         volunteers: (responseData.volunteers && typeof responseData.volunteers === 'object') ? responseData.volunteers : DEFAULT_STATS.volunteers,
         activities: (responseData.activities && typeof responseData.activities === 'object') ? responseData.activities : DEFAULT_STATS.activities,
@@ -224,8 +227,8 @@ function Dashboard() {
           </div>
         </div>
 
-        {/* Stats Grid - Row 2 (New) */}
-        <div className="grid grid-cols-2" style={{ marginBottom: '2rem' }}>
+        {/* Stats Grid - Row 2 */}
+        <div className="grid grid-cols-3" style={{ marginBottom: '2rem' }}>
           {/* Volunteers Stats */}
           <div className="stat-card">
             <div className="stat-icon" style={{ backgroundColor: '#e0e7ff' }}>
@@ -254,6 +257,26 @@ function Dashboard() {
                 <span className="badge badge-info">{safeStats.activities?.planned ?? 0} מתוכננות</span>
                 <span className="badge badge-warning">{safeStats.activities?.ongoing ?? 0} בביצוע</span>
                 <span className="badge badge-success">{safeStats.activities?.completed ?? 0} הושלמו</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Equipment Items Stats */}
+          <div className="stat-card">
+            <div className="stat-icon" style={{ backgroundColor: '#fef3c7' }}>
+              📦
+            </div>
+            <div className="stat-content">
+              <div className="stat-value">{safeStats.equipment_items?.total ?? 0}</div>
+              <div className="stat-label">פריטי ציוד</div>
+              <div className="stat-details">
+                <span className="badge badge-success">{safeStats.equipment_items?.good ?? 0} תקינים</span>
+                {(safeStats.equipment_items?.needs_replacement ?? 0) > 0 && (
+                  <span className="badge badge-warning">{safeStats.equipment_items?.needs_replacement ?? 0} דורשים החלפה</span>
+                )}
+                {(safeStats.equipment_items?.missing ?? 0) > 0 && (
+                  <span className="badge badge-danger">{safeStats.equipment_items?.missing ?? 0} חסרים</span>
+                )}
               </div>
             </div>
           </div>
