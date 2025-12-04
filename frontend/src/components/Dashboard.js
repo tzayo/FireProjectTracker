@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, CircleMarker } from 'react-leaflet';
-import { getDashboardStats } from '../api';
-import axios from 'axios';
+import { getDashboardStats, getHydrants, getEquipmentCabinets, getDashboardAlerts } from '../api';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 

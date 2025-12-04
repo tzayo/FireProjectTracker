@@ -64,3 +64,58 @@ echo "TEST 4: Verify session cleared after logout" && curl -s -b /tmp/verify_coo
 
 curl -s -o /dev/null -w "%{http_code}" http://localhost:5000/api/auth/check
 cd /home/user/FireProjectTracker/backend && python app.py > /tmp/backend_verify.log 2>&1 &
+
+
+
+---
+
+# Docker error indicates port 3000 is already in use. 
+# Diagnostic Commands: 
+# Run these on the machine to find what's using port 3000:
+
+# Check what process is using port 3000
+sudo lsof -i :3000
+
+# Or on Linux:
+sudo netstat -tlnp | grep :3000
+
+# Check for Docker containers using port 3000
+docker ps -a --filter "publish=3000"
+
+# Solutions
+# Option 1: Stop the process using port 3000
+# If a Node.js or other process is running:
+
+# Check what process is using port 3000
+sudo lsof -i :3000 2>/dev/null || netstat -tlnp 2>/dev/null | grep :3000 || ss -tlnp 2>/dev/null | grep :3000
+sudo lsof -i :5000 2>/dev/null || netstat -tlnp 2>/dev/null | grep :5000 || ss -tlnp 2>/dev/null | grep :5000
+
+# Get the PID of the process using port 3000
+PID=$(sudo lsof -t -i :3000 2>/dev/null || sudo netstat -tlnp 2>/dev/null | grep :3000 | awk '{print $7}' | cut -d'/' -f1 || sudo ss -tlnp 2>/dev/null | grep :3000 | awk '{print $6}' | cut -d',' -f2 | cut -d'=' -f2)
+echo "Process ID using port 3000: $PID"
+# Find and kill the process (use PID from lsof/netstat output)
+sudo kill -9 $PID
+
+# Option 2: Stop/remove Docker containers
+# If another Docker container is using the port:
+docker ps -a --filter "publish=3000" --format "table {{.ID}}\t{{.Names}}\t{{.Status}}\t{{.Ports}}"
+
+# Stop all running containers
+docker stop $(docker ps -q)
+container_name_or_id=$(docker ps -a --filter "publish=3000" --format "{{.ID}}")
+echo "Container using port 3000: $container_name_or_id"
+
+# Or remove specific container
+docker rm -f $container_name_or_id
+
+# Option 3: Use a different port
+# Change the Docker command to use an available port:
+
+docker run -it --rm --entrypoint /bin/sh \
+  -v $(pwd):/app \
+  -w /app \
+  -p 3000:3000 \
+  node:20-alpine \
+  -c "npm install && npm start"
+
+# Then access the app at http://localhost:3000

@@ -102,6 +102,6 @@ export const updateActivity = (id, data) => api.put(`/activities/${id}`, data);
 export const deleteActivity = (id) => api.delete(`/activities/${id}`);
 
 // Dashboard API
-export const getDashboardStats = () => api.get('/dashboard/stats');
+export const getDashboardStats = () => api.get('/dashboard/alerts');
 
 export default api;
