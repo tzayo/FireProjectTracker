@@ -67,9 +67,9 @@ function Dashboard() {
     try {
       const [statsRes, hydrantsRes, cabinetsRes, alertsRes] = await Promise.all([
         getDashboardStats(),
-        axios.get('http://localhost:5000/api/hydrants'),
-        axios.get('http://localhost:5000/api/equipment-cabinets'),
-        axios.get('http://localhost:5000/api/dashboard/alerts')
+        getHydrants(),
+        getEquipmentCabinets(),
+        getDashboardAlerts()
       ]);
 
       // Safely set stats with fallback for each nested object
@@ -442,7 +442,7 @@ function Dashboard() {
         </div>
       </div>
 
-      <style jsx>{`
+      <style>{`
         .stat-card {
           background: white;
           padding: 1.5rem;
