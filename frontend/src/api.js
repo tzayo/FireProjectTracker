@@ -103,5 +103,6 @@ export const deleteActivity = (id) => api.delete(`/activities/${id}`);
 
 // Dashboard API
 export const getDashboardStats = () => api.get('/dashboard/stats');
+export const getDashboardAlerts = () => api.get('/dashboard/alerts');
 
 export default api;
