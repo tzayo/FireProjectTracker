@@ -10,3 +10,9 @@ Werkzeug==2.3.7
 PyJWT==2.8.0
 python-socketio==5.9.0
 python-engineio==4.7.1
+
+# Google Sheets Integration
+google-auth==2.25.2
+google-auth-oauthlib==1.2.0
+google-auth-httplib2==0.2.0
+google-api-python-client==2.107.0
