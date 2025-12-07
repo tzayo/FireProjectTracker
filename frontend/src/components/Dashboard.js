@@ -119,8 +119,7 @@ function Dashboard() {
     );
   }
 
-  const defaultCenter = [31.4117, 34.6667]; // קיבוץ גלאון (מיקום משוער)
-
+  const defaultCenter = [31.63362997758141, 34.84953839768479];
   return (
     <div>
       {/* Alerts Panel - if any */}
@@ -404,7 +403,7 @@ function Dashboard() {
                         <strong>מיקום:</strong> {cabinet.location}
                       </p>
                       <p style={{ margin: '0.25rem 0', fontSize: '0.875rem' }}>
-                        <strong>סטטוס:</strong>{' '}
+                        <strong>סטאטוס:</strong>{' '}
                         <span className={`badge badge-${cabinet.status === 'ready' ? 'success' : cabinet.status === 'needs_check' ? 'warning' : 'danger'}`}>
                           {cabinet.status === 'ready' ? 'תקין' : cabinet.status === 'needs_check' ? 'דורש בדיקה' : 'לא שלם'}
                         </span>
